@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./index.css";
+import "./professional.css";
 import "leaflet/dist/leaflet.css";
 
 import HomeScreen from "./screens/HomeScreen";
