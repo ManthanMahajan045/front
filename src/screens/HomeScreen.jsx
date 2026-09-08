@@ -48,7 +48,7 @@ function vibrateSafety(close = false) {
   if (navigator.vibrate) navigator.vibrate(close ? [90, 70, 90] : [70]);
 }
 
-export default function HomeScreen({ onNavigate, selectedLocation, theme, onToggleTheme, onNotifications }) {
+export default function HomeScreen({ onNavigate, selectedLocation, theme, onToggleTheme, onNotifications, onMenu }) {
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -64,12 +64,8 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
   }, []);
 
   const checkSafetyRadius = (location) => {
-    const nearest = hazardsRef.current
-      .map((hazard) => ({ ...hazard, distanceM: distanceKm(location.lat, location.lng, hazard.coordinates.lat, hazard.coordinates.lng) * 1000 }))
-      .filter((hazard) => hazard.distanceM <= HAZARD_ALERT_RADIUS_M)
-      .sort((a, b) => a.distanceM - b.distanceM)[0];
+    const nearest = hazardsRef.current.map((hazard) => ({ ...hazard, distanceM: distanceKm(location.lat, location.lng, hazard.coordinates.lat, hazard.coordinates.lng) * 1000 })).filter((hazard) => hazard.distanceM <= HAZARD_ALERT_RADIUS_M).sort((a, b) => a.distanceM - b.distanceM)[0];
     if (!nearest) { setNearbyHazard(null); return; }
-
     const close = nearest.distanceM <= HAZARD_CLOSE_RADIUS_M;
     const lastAlert = alertedHazardsRef.current.get(nearest.id) || 0;
     const cooldown = close ? 25000 : 45000;
@@ -78,9 +74,7 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
       setNearbyHazard({ ...nearest, close });
       playSafetyTone(close);
       vibrateSafety(close);
-    } else {
-      setNearbyHazard((current) => current?.id === nearest.id ? { ...nearest, close } : current);
-    }
+    } else setNearbyHazard((current) => current?.id === nearest.id ? { ...nearest, close } : current);
   };
 
   useEffect(() => {
@@ -112,15 +106,13 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
 
   const locateNow = async () => {
     setLocating(true);
-    try {
-      const next = await getCurrentLocation({ timeout: 20000, targetAccuracy: 8 });
-      lastLocationRef.current = next; setUserLocation(next); setLocationError(false); checkSafetyRadius(next);
-    } catch { setLocationError(true); } finally { setLocating(false); }
+    try { const next = await getCurrentLocation({ timeout: 20000, targetAccuracy: 8 }); lastLocationRef.current = next; setUserLocation(next); setLocationError(false); checkSafetyRadius(next); }
+    catch { setLocationError(true); } finally { setLocating(false); }
   };
 
   return (
     <div className="screen home-screen">
-      <TopBar variant="home" title="RoadSense" theme={theme} onToggleTheme={onToggleTheme} onNotifications={onNotifications} />
+      <TopBar variant="home" title="RoadSense" theme={theme} onToggleTheme={onToggleTheme} onNotifications={onNotifications} onMenu={onMenu} />
       <div className="search-input" onClick={() => onNavigate("search")}>{selectedLocation ? selectedLocation.name : "Search destination"}</div>
       <div className="map-wrapper">
         <MapContainer center={[mapCenter.lat, mapCenter.lng]} zoom={14} zoomControl preferCanvas style={{ height: "100%", width: "100%" }}>
@@ -130,18 +122,9 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
           {selectedLocation && <Marker position={[selectedLocation.coordinates.lat, selectedLocation.coordinates.lng]} icon={selectedPinIcon}><Popup>{selectedLocation.name}</Popup></Marker>}
           {confirmedHazards.map((hazard) => <CircleMarker key={hazard.id} center={[hazard.coordinates.lat, hazard.coordinates.lng]} radius={8} pathOptions={{ color: severityColors[hazard.severity], fillColor: severityColors[hazard.severity], fillOpacity: .6 }}><Popup>{hazard.name} — {hazard.severityLabel} ({hazard.type})</Popup></CircleMarker>)}
         </MapContainer>
-        <div className="map-actions">
-          <button className="map-action-btn" onClick={locateNow} disabled={locating}><LocateFixed size={15} className={locating ? "spin" : ""} /> {locating ? "Locating…" : "My location"}</button>
-          {selectedLocation && <button className="map-action-btn route-cta" onClick={() => onNavigate("directions")}><Navigation size={15} /> Safe directions</button>}
-        </div>
+        <div className="map-actions"><button className="map-action-btn" onClick={locateNow} disabled={locating}><LocateFixed size={15} className={locating ? "spin" : ""} /> {locating ? "Locating…" : "My location"}</button>{selectedLocation && <button className="map-action-btn route-cta" onClick={() => onNavigate("directions")}><Navigation size={15} /> Safe directions</button>}</div>
       </div>
-
-      {nearbyHazard && <div className={`driver-alert ${nearbyHazard.close ? "driver-alert-close" : ""}`} role="alert">
-        <div className="driver-alert-icon"><AlertTriangle size={21} /></div>
-        <div className="driver-alert-copy"><strong>{nearbyHazard.close ? "Hazard very close" : "Hazard ahead"}</strong><span>{Math.max(1, Math.round(nearbyHazard.distanceM))} m · {nearbyHazard.hazardType || nearbyHazard.type || nearbyHazard.name}</span><small>{nearbyHazard.close ? "Slow down and stay alert" : "Drive carefully"}</small></div>
-        <div className="driver-alert-actions"><Volume2 size={15} /><button onClick={() => setNearbyHazard(null)} aria-label="Dismiss hazard alert"><X size={17} /></button></div>
-      </div>}
-
+      {nearbyHazard && <div className={`driver-alert ${nearbyHazard.close ? "driver-alert-close" : ""}`} role="alert"><div className="driver-alert-icon"><AlertTriangle size={21} /></div><div className="driver-alert-copy"><strong>{nearbyHazard.close ? "Hazard very close" : "Hazard ahead"}</strong><span>{Math.max(1, Math.round(nearbyHazard.distanceM))} m · {nearbyHazard.hazardType || nearbyHazard.type || nearbyHazard.name}</span><small>{nearbyHazard.close ? "Slow down and stay alert" : "Drive carefully"}</small></div><div className="driver-alert-actions"><Volume2 size={15} /><button onClick={() => setNearbyHazard(null)} aria-label="Dismiss hazard alert"><X size={17} /></button></div></div>}
       {locationError && <p className="location-error">Location access nahi mila — browser location permission check karein.</p>}
       <div className="alert-banner"><div className="alert-banner-title"><AlertTriangle size={14} /> {nearestAlert.hazardType || nearestAlert.type || nearestAlert.name} detected nearby</div><div className="alert-banner-meta">{nearestAlert.distance !== undefined ? `${(nearestAlert.distance * 1000).toFixed(0)} m ahead` : "Nearby"}</div><button onClick={() => onNavigate("alerts")}>View Alert</button></div>
       <button className="btn-primary" onClick={() => onNavigate("report")}>+ Report a Hazard</button>
