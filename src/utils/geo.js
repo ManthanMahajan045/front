@@ -1,4 +1,4 @@
-// Haversine formula — straight-line distance between two lat/lng points, in km.
+// Distance between two latitude/longitude points, in km.
 export function distanceKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -20,22 +20,60 @@ export async function reverseGeocode(lat, lng) {
   return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
 
-// One-shot GPS lookup. We deliberately do not use watchPosition: the app
-// polls only when needed, avoiding a permanently active GPS watcher.
-export function getCurrentLocation() {
+// High-accuracy browser GPS. Instead of accepting the first fix, keep the
+// GPS sensor open briefly and return the most accurate fresh fix received.
+// This avoids many of the 100–200m stale/network-location readings.
+export function getCurrentLocation({ timeout = 15000, targetAccuracy = 12 } = {}) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("Geolocation not supported"));
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({
+
+    let settled = false;
+    let best = null;
+    let watchId = null;
+    let timerId = null;
+
+    const finish = (error = null) => {
+      if (settled) return;
+      settled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (timerId !== null) window.clearTimeout(timerId);
+      if (best) resolve(best);
+      else reject(error || new Error("Unable to get a GPS fix"));
+    };
+
+    const onPosition = (pos) => {
+      const accuracy = Number(pos.coords.accuracy);
+      if (!Number.isFinite(accuracy)) return;
+
+      const next = {
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-      }),
-      reject,
-      { enableHighAccuracy: true, timeout: 7000, maximumAge: 2500 }
-    );
+        accuracy,
+        altitude: pos.coords.altitude ?? null,
+        heading: pos.coords.heading ?? null,
+        speed: pos.coords.speed ?? null,
+        timestamp: pos.timestamp,
+      };
+
+      if (!best || accuracy < best.accuracy) best = next;
+      if (accuracy <= targetAccuracy) finish();
+    };
+
+    const onError = (error) => {
+      // A timeout/error may still have produced a useful GPS fix. Return it.
+      if (best) finish();
+      else if (error?.code === 1) finish(error);
+    };
+
+    watchId = navigator.geolocation.watchPosition(onPosition, onError, {
+      enableHighAccuracy: true,
+      timeout: timeout,
+      maximumAge: 0,
+    });
+
+    timerId = window.setTimeout(() => finish(), timeout);
   });
 }
