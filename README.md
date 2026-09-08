@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # RoadSense Frontend
 
 Matches the Figma wireframe: Home, Search, Report a Hazard, Profile, Alerts, Reports.
@@ -48,3 +49,7 @@ src/
   OpenRouteService/Nominatim geocoding.
 - No auth yet — `reportedBy` in `firebase.js` is `null` until an auth layer
   is added.
+=======
+# front
+frontend par kaam bhavya
+>>>>>>> f396cdad8d72f15a3a6df3dc7ed3dc3c0382d796
