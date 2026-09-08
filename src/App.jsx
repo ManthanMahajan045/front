@@ -15,7 +15,7 @@ export default function App() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("roadsense-theme");
-    return saved || (window.matchMedia?.("(prefers-color-scheme: dark").matches ? "dark" : "light");
+    return saved || (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   });
 
   useEffect(() => {
