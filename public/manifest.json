@@ -1,0 +1,11 @@
+{
+  "name": "RoadSense",
+  "short_name": "RoadSense",
+  "description": "Community-driven road hazard reporting and alerts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6d28d9",
+  "orientation": "portrait",
+  "icons": []
+}

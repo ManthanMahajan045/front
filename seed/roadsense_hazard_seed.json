@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Jhar black spot, Bassi, Jaipur (NH 21)",
+    "lat": 26.8472143,
+    "lng": 75.7230006,
+    "type": "Official black spot",
+    "severity": "Red",
+    "source": "Rajasthan State Road Safety cell"
+  },
+  {
+    "name": "Kanya Kheri Choraha, Hamirgarh, Bhilwara (NH 48)",
+    "lat": 25.200552,
+    "lng": 74.5821344,
+    "type": "Official black spot",
+    "severity": "Red",
+    "source": "Rajasthan State Road Safety Cell"
+  },
+  {
+    "name": "Gordhanpura puliya, kotputli, Behror",
+    "lat": 27.646595,
+    "lng": 76.13419,
+    "type": "Black spot",
+    "severity": "Red",
+    "source": "Mission safer road(by Jaipur police)"
+  },
+  {
+    "name": "Lasadiya mod, Jaipur rural",
+    "lat": 26.3147,
+    "lng": 75.31523,
+    "type": "Black spot",
+    "severity": "Orange",
+    "source": "Mission safer road(by Jaipur police)"
+  },
+  {
+    "name": "Achrol,Chandwaji",
+    "lat": 27.07543,
+    "lng": 75.57399,
+    "type": "Potholes, black spot",
+    "severity": "Yellow",
+    "source": "Mission safer road(by Jaipur police)"
+  },
+  {
+    "name": "Bilpur, chandwaji",
+    "lat": 27.13224,
+    "lng": 75.56051,
+    "type": "Black spots , potholes",
+    "severity": "Orange",
+    "source": "Mission safer road(by Jaipur police)"
+  },
+  {
+    "name": "Thali puliya, andhi",
+    "lat": 27.03306,
+    "lng": 76.10273,
+    "type": "Black spots",
+    "severity": "Orange",
+    "source": "Mission safer road(by Jaipur police)"
+  },
+  {
+    "name": "Bharatpur district intersections (evening hours)",
+    "lat": 27.3114891,
+    "lng": 77.1445598,
+    "type": "Official black spot / poor lighting",
+    "severity": "Orange",
+    "source": "Bharatpur SP digital repository, “High Red” lat/long method — 26%+ accidents occur 6–9 PM (ETV Bharat, Oct 2025)"
+  },
+  {
+    "name": "Panorama exit route, Ramnagaria",
+    "lat": 26.8147756,
+    "lng": 75.8614913,
+    "type": "Pothole",
+    "severity": "High",
+    "source": "Local rickshaw driver"
+  },
+  {
+    "name": "High tension road, Jaipur",
+    "lat": 26.8457836,
+    "lng": 75.754312,
+    "type": "Potholes",
+    "severity": "High",
+    "source": "Local van driver"
+  },
+  {
+    "name": "Bombay hospital circle, Sitapura",
+    "lat": 26.7824912,
+    "lng": 75.853799,
+    "type": "Potholes and black spots",
+    "severity": "Moderate",
+    "source": "Local head constable (Ramnagariya police station)"
+  },
+  {
+    "name": "7, Rd Number - 1D, Vishwakarma Industrial Area, Vidhyadhar Nagar",
+    "lat": 26.9711103,
+    "lng": 75.777581,
+    "type": "Local-knowledge hazard",
+    "severity": "High",
+    "source": "Daily bike rider"
+  },
+  {
+    "name": "Chappa chauraha, Mansarovar",
+    "lat": 26.8232896,
+    "lng": 75.6787535,
+    "type": "Potholes and black spots",
+    "severity": "Moderate",
+    "source": "Local school van driver"
+  },
+  {
+    "name": "NRI circle, pratap nagar, Jaipur",
+    "lat": 26.8072126,
+    "lng": 75.8336619,
+    "type": "Potholes",
+    "severity": "Moderate",
+    "source": "Local school van driver"
+  },
+  {
+    "name": "D-mart chauraha, behind SKIT, Ramnagaria",
+    "lat": 26.8497087,
+    "lng": 75.6823924,
+    "type": "Local-knowledge hazard",
+    "severity": "Moderate",
+    "source": "Auto rickshaw driver"
+  }
+]
