@@ -1,6 +1,6 @@
 import { ArrowLeft, Bell, Menu, Moon, Sun } from "lucide-react";
 
-export default function TopBar({ variant = "home", title, onBack, theme = "light", onToggleTheme }) {
+export default function TopBar({ variant = "home", title, onBack, theme = "light", onToggleTheme, onNotifications }) {
   const themeButton = onToggleTheme ? (
     <button className="icon-btn" onClick={onToggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} title="Toggle theme">
       {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
@@ -23,7 +23,7 @@ export default function TopBar({ variant = "home", title, onBack, theme = "light
       <h1>{title}</h1>
       <div className="top-actions">
         {themeButton}
-        <button className="icon-btn" aria-label="Notifications"><Bell size={20} /></button>
+        <button className="icon-btn alert-top-btn" onClick={onNotifications} aria-label="Open safety alerts" title="Safety alerts"><Bell size={20} /></button>
       </div>
     </div>
   );
