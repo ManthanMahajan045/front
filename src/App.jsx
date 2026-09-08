@@ -28,7 +28,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} />}
+      {screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} onNotifications={() => setScreen("alerts")} />}
       {screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}
       {screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}
       {screen === "report" && <ReportHazardScreen {...screenProps} />}
