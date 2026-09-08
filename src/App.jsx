@@ -8,13 +8,14 @@ import ReportHazardScreen from "./screens/ReportHazardScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import AlertsScreen from "./screens/AlertsScreen";
 import ReportsScreen from "./screens/ReportsScreen";
+import DirectionsScreen from "./screens/DirectionsScreen";
 
 export default function App() {
   const [screen, setScreen] = useState("home");
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("roadsense-theme");
-    return saved || (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    return saved || (window.matchMedia?.("(prefers-color-scheme: dark").matches ? "dark" : "light");
   });
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function App() {
     <div className="app-shell">
       {screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} />}
       {screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}
+      {screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}
       {screen === "report" && <ReportHazardScreen {...screenProps} />}
       {screen === "profile" && <ProfileScreen {...screenProps} />}
       {screen === "alerts" && <AlertsScreen {...screenProps} />}
