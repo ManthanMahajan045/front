@@ -3,120 +3,55 @@ import { MapPin, Loader2 } from "lucide-react";
 import TopBar from "../components/TopBar";
 import { searchableLocations } from "../sampleData";
 
-// Free, no-API-key geocoding via OpenStreetMap's Nominatim service — matches
-// the OSM/Leaflet stack already used for the map. Rate-limited to ~1 req/sec,
-// which the debounce below respects.
 async function fetchLiveSuggestions(query, signal) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=in&q=${encodeURIComponent(
-    query
-  )}`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=in&q=${encodeURIComponent(query)}`;
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error("Geocoding request failed");
   const data = await res.json();
-  return data.map((item) => ({
-    id: item.place_id,
-    name: item.display_name.split(",")[0],
-    address: item.display_name,
-    coordinates: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) },
-  }));
+  return data.map((item) => ({ id: item.place_id, name: item.display_name.split(",")[0], address: item.display_name, coordinates: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) } }));
 }
 
 export default function SearchScreen({ onNavigate, onSelectLocation }) {
   const [query, setQuery] = useState("");
-  const [liveResults, setLiveResults] = useState(null); // null = not searched yet
+  const [liveResults, setLiveResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
   const debounceRef = useRef(null);
 
   useEffect(() => {
-    if (!query.trim() || query.trim().length < 3) {
-      setLiveResults(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    clearTimeout(debounceRef.current);
-
+    if (!query.trim() || query.trim().length < 3) { setLiveResults(null); setLoading(false); return; }
+    setLoading(true); setError(null); clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      try {
-        const results = await fetchLiveSuggestions(query, controller.signal);
-        setLiveResults(results);
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Search failed:", err);
-          setError("Search abhi kaam nahi kar raha, thodi der baad try karo.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    }, 500); // debounce — waits till user pauses typing before hitting the API
-
+      const controller = new AbortController(); abortRef.current = controller;
+      try { setLiveResults(await fetchLiveSuggestions(query, controller.signal)); }
+      catch (err) { if (err.name !== "AbortError") { console.error("Search failed:", err); setError("Search abhi kaam nahi kar raha, thodi der baad try karo."); } }
+      finally { setLoading(false); }
+    }, 500);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
-  function handlePick(location) {
-    onSelectLocation?.(location);
-    onNavigate("home");
-  }
-
-  // Before typing 3+ chars: show local "Recent" list. After: show live API results.
+  function handlePick(location) { onSelectLocation?.(location); onNavigate("home"); }
   const showingLive = liveResults !== null;
   const results = showingLive ? liveResults : searchableLocations;
 
   return (
     <div className="screen">
       <TopBar variant="back" title="" onBack={() => onNavigate("home")} />
-
       <div className="search-input" style={{ marginTop: 12 }}>
-        <input
-          autoFocus
-          placeholder="Search here"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <input autoFocus placeholder="Search here" value={query} onChange={(e) => setQuery(e.target.value)} />
         {loading && <Loader2 size={16} className="spin" />}
       </div>
-
-      <div className="section-label">
-        {showingLive ? "Suggestions" : "Recent"}
-      </div>
-
-      {error && (
-        <p style={{ padding: "0 20px", fontSize: 12, color: "#dc2626" }}>{error}</p>
-      )}
-
-      {!loading && results.length === 0 && (
-        <p style={{ padding: "0 20px", fontSize: 13, color: "#6b7280" }}>
-          Koi location nahi mili "{query}" ke liye.
-        </p>
-      )}
-
+      <div className="section-label">{showingLive ? "Suggestions" : "Recent"}</div>
+      {error && <p style={{ padding: "0 20px", fontSize: 12, color: "#dc2626" }}>{error}</p>}
+      {!loading && results.length === 0 && <p style={{ padding: "0 20px", fontSize: 13, color: "#6b7280" }}>Koi location nahi mili "{query}" ke liye.</p>}
       {results.map((place) => (
-        <button
-          className="card"
-          key={place.id}
-          onClick={() => handlePick(place)}
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 10,
-            width: "calc(100% - 40px)",
-            textAlign: "left",
-            cursor: "pointer",
-            background: "#fff",
-          }}
-        >
+        <button className="card" key={place.id} onClick={() => handlePick(place)} style={{ display: "flex", alignItems: "flex-start", gap: 10, width: "calc(100% - 40px)", textAlign: "left", cursor: "pointer", background: "#fff" }}>
           <MapPin size={16} style={{ marginTop: 2, flexShrink: 0, color: "#6d28d9" }} />
           <div>
-            <div className="card-title">{place.name}</div>
-            <div className="card-meta">{place.address}</div>
+            <div className="card-title" style={{ color: "#1f1f23" }}>{place.name}</div>
+            <div className="card-meta" style={{ color: "#8b8b98" }}>{place.address}</div>
           </div>
         </button>
       ))}
