@@ -12,8 +12,6 @@ export function distanceKm(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
-// Reverse geocoding — turns lat/lng into a real readable address, using the
-// same free Nominatim (OpenStreetMap) service the search bar already uses.
 export async function reverseGeocode(lat, lng) {
   const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
   const res = await fetch(url);
@@ -22,8 +20,8 @@ export async function reverseGeocode(lat, lng) {
   return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
 
-// Wraps the browser Geolocation API in a promise, so screens can just
-// `await getCurrentLocation()` instead of juggling callbacks everywhere.
+// One-shot GPS lookup. We deliberately do not use watchPosition: the app
+// polls only when needed, avoiding a permanently active GPS watcher.
 export function getCurrentLocation() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -31,9 +29,13 @@ export function getCurrentLocation() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => reject(err),
-      { enableHighAccuracy: true, timeout: 10000 }
+      (pos) => resolve({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+      }),
+      reject,
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 2500 }
     );
   });
 }
