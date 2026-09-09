@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RoadSense logo">
+  <rect width="512" height="512" rx="108" fill="#6D28D9"/>
+  <path d="M256 99c-67 0-121 54-121 121 0 91 121 193 121 193s121-102 121-193c0-67-54-121-121-121Z" fill="#fff"/>
+  <circle cx="256" cy="205" r="49" fill="#6D28D9"/>
+  <path d="m256 166 29 55h-58l29-55Zm0 25v17" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="220" r="4" fill="#fff"/>
+  <path d="M340 156c0-23 15-42 34-42s34 19 34 42" fill="none" stroke="#DDD6FE" stroke-width="16" stroke-linecap="round"/>
+</svg>
