@@ -13,6 +13,7 @@ import ReportsScreen from "./screens/ReportsScreen";
 import DirectionsScreen from "./screens/DirectionsScreen";
 import AuthorityDashboard from "./screens/AuthorityDashboard";
 import SideMenu from "./components/SideMenu";
+import { translatePage } from "./i18n";
 
 const AUTH_KEY = "roadsense-auth";
 const LANGUAGE_KEY = "roadsense-language";
@@ -26,7 +27,16 @@ export default function App() {
   const [theme, setTheme] = useState(() => { const saved = localStorage.getItem("roadsense-theme"); return saved || (window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light"); });
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("roadsense-theme", theme); }, [theme]);
-  useEffect(() => { localStorage.setItem(LANGUAGE_KEY, language); }, [language]);
+  useEffect(() => {
+    localStorage.setItem(LANGUAGE_KEY, language);
+    document.documentElement.lang = language === "hi" ? "hi" : "en";
+    if (language === "hi") {
+      translatePage("hi");
+      const observer = new MutationObserver(() => translatePage("hi"));
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      return () => observer.disconnect();
+    }
+  }, [language]);
 
   const toggleTheme = () => setTheme((current) => current === "dark" ? "light" : "dark");
   const navigate = (next) => { setScreen(next); setMenuOpen(false); };
