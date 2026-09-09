@@ -46,7 +46,10 @@ export default function AuthScreen({ onAuthenticated }) {
         .auth-screen .auth-methods button { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; background: transparent !important; }
         .auth-screen .auth-methods button.active { background: #5b21b6 !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; box-shadow: 0 3px 10px rgba(0,0,0,.18) !important; }
         .auth-screen .auth-form { min-height: 190px !important; align-content: start !important; }
-        .auth-screen .auth-phone-row { min-height: 50px !important; }
+        .auth-screen .auth-phone-row { width: 100% !important; max-width: 100% !important; min-width: 0 !important; min-height: 50px !important; grid-template-columns: minmax(0,1fr) 112px !important; overflow: hidden !important; }
+        .auth-screen .auth-phone-row .auth-input.country { width: 100% !important; min-width: 0 !important; }
+        .auth-screen .auth-phone-row .auth-input.country input { min-width: 0 !important; width: 100% !important; }
+        .auth-screen .auth-phone-row .auth-secondary { width: 100% !important; min-width: 0 !important; }
         .auth-screen .auth-switch { color: #111111 !important; -webkit-text-fill-color: #111111 !important; opacity: 1 !important; visibility: visible !important; display: block !important; position: relative !important; z-index: 20 !important; filter: none !important; mix-blend-mode: normal !important; }
         .auth-screen .auth-switch .auth-switch-text { color: #111111 !important; -webkit-text-fill-color: #111111 !important; opacity: 1 !important; visibility: visible !important; }
         .auth-screen .auth-switch button { color: #6d28d9 !important; -webkit-text-fill-color: #6d28d9 !important; opacity: 1 !important; visibility: visible !important; font-weight: 700 !important; }
