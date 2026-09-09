@@ -56,8 +56,22 @@ export default function AuthScreen({ onAuthenticated }) {
         .auth-screen .auth-legal { color: #6b7280 !important; }
         :root[data-theme="dark"] .auth-screen .auth-brand strong,:root[data-theme="dark"] .auth-screen .auth-form label > span,:root[data-theme="dark"] .auth-screen .auth-switch { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
         :root[data-theme="dark"] .auth-screen .auth-brand span,:root[data-theme="dark"] .auth-screen .auth-legal { color:#a1a1aa !important; -webkit-text-fill-color:#a1a1aa !important; }
-        :root[data-theme="dark"] .auth-screen .auth-input input { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
+        :root[data-theme="dark"] .auth-screen .auth-input input { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; caret-color:#ffffff !important; }
         :root[data-theme="dark"] .auth-screen .auth-input input::placeholder,:root[data-theme="dark"] .auth-screen .auth-otp::placeholder { color:#a1a1aa !important; -webkit-text-fill-color:#a1a1aa !important; }
+        :root[data-theme="dark"] .auth-screen .auth-input,
+        :root[data-theme="dark"] .auth-screen .auth-otp { background:#18181b !important; color:#ffffff !important; border-color:#3f3f46 !important; }
+        :root[data-theme="dark"] .auth-screen .auth-input svg { color:#d4d4d8 !important; }
+        :root[data-theme="dark"] .auth-screen .auth-input.country b { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
+        :root[data-theme="dark"] .auth-screen .auth-secondary,
+        :root[data-theme="dark"] .auth-screen .auth-socials button { background:#18181b !important; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; border-color:#52525b !important; }
+        :root[data-theme="dark"] .auth-screen input:-webkit-autofill,
+        :root[data-theme="dark"] .auth-screen input:-webkit-autofill:hover,
+        :root[data-theme="dark"] .auth-screen input:-webkit-autofill:focus { -webkit-text-fill-color:#ffffff !important; -webkit-box-shadow:0 0 0 1000px #18181b inset !important; caret-color:#ffffff !important; }
+        :root:not([data-theme="dark"]) .auth-screen .auth-input input,
+        :root:not([data-theme="dark"]) .auth-screen .auth-otp { color:#111111 !important; -webkit-text-fill-color:#111111 !important; caret-color:#111111 !important; }
+        :root:not([data-theme="dark"]) .auth-screen input:-webkit-autofill,
+        :root:not([data-theme="dark"]) .auth-screen input:-webkit-autofill:hover,
+        :root:not([data-theme="dark"]) .auth-screen input:-webkit-autofill:focus { -webkit-text-fill-color:#111111 !important; -webkit-box-shadow:0 0 0 1000px #ffffff inset !important; caret-color:#111111 !important; }
       `}</style>
       <section className="auth-card" aria-label={mode === "login" ? "Log in to RoadSense" : "Create a RoadSense account"}>
         {mode === "signup" && <button className="auth-back" type="button" onClick={() => switchMode("login")} aria-label="Back to login"><ArrowLeft size={19} /></button>}
