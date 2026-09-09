@@ -3,6 +3,7 @@ import "./index.css";
 import "./professional.css";
 import "leaflet/dist/leaflet.css";
 
+import AuthScreen from "./screens/AuthScreen";
 import HomeScreen from "./screens/HomeScreen";
 import SearchScreen from "./screens/SearchScreen";
 import ReportHazardScreen from "./screens/ReportHazardScreen";
@@ -13,7 +14,12 @@ import DirectionsScreen from "./screens/DirectionsScreen";
 import AuthorityDashboard from "./screens/AuthorityDashboard";
 import SideMenu from "./components/SideMenu";
 
+const AUTH_KEY = "roadsense-auth";
+
 export default function App() {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(AUTH_KEY)) || null; } catch { return null; }
+  });
   const [screen, setScreen] = useState("home");
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -30,6 +36,8 @@ export default function App() {
   const toggleTheme = () => setTheme((current) => (current === "dark" ? "light" : "dark"));
   const navigate = (next) => { setScreen(next); setMenuOpen(false); };
   const screenProps = { onNavigate: navigate, theme, onToggleTheme: toggleTheme, onMenu: () => setMenuOpen(true) };
+
+  if (!user) return <div className="app-shell auth-app-shell"><AuthScreen onAuthenticated={setUser} /></div>;
 
   return (
     <div className="app-shell">
