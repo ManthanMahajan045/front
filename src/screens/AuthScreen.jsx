@@ -54,6 +54,10 @@ export default function AuthScreen({ onAuthenticated }) {
         .auth-screen .auth-switch .auth-switch-text { color: #111111 !important; -webkit-text-fill-color: #111111 !important; opacity: 1 !important; visibility: visible !important; }
         .auth-screen .auth-switch button { color: #6d28d9 !important; -webkit-text-fill-color: #6d28d9 !important; opacity: 1 !important; visibility: visible !important; font-weight: 700 !important; }
         .auth-screen .auth-legal { color: #6b7280 !important; }
+        :root[data-theme="dark"] .auth-screen .auth-brand strong,:root[data-theme="dark"] .auth-screen .auth-form label > span,:root[data-theme="dark"] .auth-screen .auth-switch { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
+        :root[data-theme="dark"] .auth-screen .auth-brand span,:root[data-theme="dark"] .auth-screen .auth-legal { color:#a1a1aa !important; -webkit-text-fill-color:#a1a1aa !important; }
+        :root[data-theme="dark"] .auth-screen .auth-input input { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
+        :root[data-theme="dark"] .auth-screen .auth-input input::placeholder,:root[data-theme="dark"] .auth-screen .auth-otp::placeholder { color:#a1a1aa !important; -webkit-text-fill-color:#a1a1aa !important; }
       `}</style>
       <section className="auth-card" aria-label={mode === "login" ? "Log in to RoadSense" : "Create a RoadSense account"}>
         {mode === "signup" && <button className="auth-back" type="button" onClick={() => switchMode("login")} aria-label="Back to login"><ArrowLeft size={19} /></button>}
