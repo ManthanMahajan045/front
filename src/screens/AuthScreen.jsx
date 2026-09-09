@@ -24,7 +24,6 @@ export default function AuthScreen({ onAuthenticated }) {
     if (mode === "signup" && !name.trim()) return setError("Enter your name.");
     if (method === "phone" && !otpSent) return setOtpSent(true);
     if (method === "phone" && otp.length !== 6) return setError("Enter the 6-digit OTP.");
-
     const user = { name: name.trim() || email.split("@")[0] || "RoadSense user", email: email.trim(), phone: phone.trim(), method };
     localStorage.setItem(AUTH_KEY, JSON.stringify(user));
     onAuthenticated(user);
@@ -52,12 +51,10 @@ export default function AuthScreen({ onAuthenticated }) {
       <section className="auth-card" aria-label={mode === "login" ? "Log in to RoadSense" : "Create a RoadSense account"}>
         {mode === "signup" && <button className="auth-back" type="button" onClick={() => switchMode("login")} aria-label="Back to login"><ArrowLeft size={19} /></button>}
         <div className="auth-brand"><strong>RoadSense</strong><span>Smart roads. Safer journeys.</span></div>
-
         <div className="auth-methods" role="tablist" aria-label="Login method">
           <button type="button" className={method === "email" ? "active" : ""} onClick={() => switchMethod("email")} role="tab" aria-selected={method === "email"}>Email</button>
           <button type="button" className={method === "phone" ? "active" : ""} onClick={() => switchMethod("phone")} role="tab" aria-selected={method === "phone"}>Phone</button>
         </div>
-
         <form className="auth-form" onSubmit={submit} noValidate>
           {mode === "signup" && <label><span>Full name</span><div className="auth-input"><UserRound size={17} /><input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="Your name" /></div></label>}
           {method === "email" ? <>
@@ -71,13 +68,11 @@ export default function AuthScreen({ onAuthenticated }) {
           {error && <div className="auth-error" role="alert">{error}</div>}
           <button className="auth-primary" type="submit">{mode === "login" ? (method === "phone" ? "Verify and log in" : "Log in") : "Create account"}</button>
         </form>
-
         {mode === "login" && <>
           <div className="auth-divider"><span>or continue with</span></div>
           <div className="auth-socials"><button type="button" onClick={() => setError("Google sign-in will activate when Firebase Authentication is connected.")}>Google</button><button type="button" onClick={() => setError("Apple sign-in will activate when Firebase Authentication is connected.")}><Apple size={16} /> Apple</button></div>
         </>}
-
-        <p className="auth-switch"><span className="auth-switch-text">{mode === "login" ? "Don’t have an account?" : "Already have an account?"}</span>{" "}<button type="button" onClick={() => switchMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? "Sign up" : "Log in"}</button></p>
+        <p className="auth-switch" style={{ opacity: 1, color: "#111827", WebkitTextFillColor: "#111827", filter: "none" }}><span className="auth-switch-text" style={{ color: "#111827", WebkitTextFillColor: "#111827", opacity: 1 }}>Don’t have an account?</span>{" "}<button type="button" style={{ color: "#6d28d9", WebkitTextFillColor: "#6d28d9", opacity: 1, fontWeight: 700 }} onClick={() => switchMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? "Sign up" : "Log in"}</button></p>
         <p className="auth-legal">By continuing, you agree to RoadSense's Terms and Privacy Policy.</p>
       </section>
     </main>
