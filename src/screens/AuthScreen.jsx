@@ -42,7 +42,9 @@ export default function AuthScreen({ onAuthenticated }) {
         .auth-screen .auth-input { color: #111111 !important; opacity: 1 !important; }
         .auth-screen .auth-input input { color: #111111 !important; -webkit-text-fill-color: #111111 !important; }
         .auth-screen .auth-input input::placeholder,.auth-screen .auth-otp::placeholder { color: #6b7280 !important; opacity: 1 !important; -webkit-text-fill-color: #6b7280 !important; }
-        .auth-screen .auth-methods button { color: #111111 !important; -webkit-text-fill-color: #111111 !important; }
+        .auth-screen .auth-methods { background: #6d28d9 !important; }
+        .auth-screen .auth-methods button { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; background: transparent !important; }
+        .auth-screen .auth-methods button.active { background: #5b21b6 !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; box-shadow: 0 3px 10px rgba(0,0,0,.18) !important; }
         .auth-screen .auth-switch { color: #111111 !important; -webkit-text-fill-color: #111111 !important; opacity: 1 !important; visibility: visible !important; display: block !important; position: relative !important; z-index: 20 !important; filter: none !important; mix-blend-mode: normal !important; }
         .auth-screen .auth-switch .auth-switch-text { color: #111111 !important; -webkit-text-fill-color: #111111 !important; opacity: 1 !important; visibility: visible !important; }
         .auth-screen .auth-switch button { color: #6d28d9 !important; -webkit-text-fill-color: #6d28d9 !important; opacity: 1 !important; visibility: visible !important; font-weight: 700 !important; }
