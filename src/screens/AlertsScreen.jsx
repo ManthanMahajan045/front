@@ -5,84 +5,14 @@ import BottomNav from "../components/BottomNav";
 import { confirmedHazards } from "../sampleData";
 import { getLocalReports } from "../firebase";
 import { distanceKm, getCurrentLocation } from "../utils/geo";
-
 const ALERT_RADIUS_KM = 5;
 const NOTIFIED_KEY = "roadsense_notified_alerts";
-
-function browserNotify(alert) {
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
-  const notification = new Notification("RoadSense alert", {
-    body: `${alert.title} is ${alert.distance < 1 ? `${Math.round(alert.distance * 1000)} m` : `${alert.distance.toFixed(1)} km`} away. Drive carefully.`,
-    tag: `roadsense-${alert.id}`,
-    icon: "/favicon.ico",
-  });
-  notification.onclick = () => { window.focus(); notification.close(); };
-}
-
+function browserNotify(alert) { if (!("Notification" in window) || Notification.permission !== "granted") return; const notification = new Notification("RoadSense alert", { body: `${alert.title} is ${alert.distance < 1 ? `${Math.round(alert.distance * 1000)} m` : `${alert.distance.toFixed(1)} km`} away. Drive carefully.`, tag: `roadsense-${alert.id}`, icon: "/roadsense-logo.svg" }); notification.onclick = () => { window.focus(); notification.close(); }; }
 export default function AlertsScreen({ onNavigate }) {
-  const [tab, setTab] = useState("active");
-  const [locationStatus, setLocationStatus] = useState("idle");
-  const [activeAlerts, setActiveAlerts] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [notificationStatus, setNotificationStatus] = useState("default");
-
-  const requestNotifications = async () => {
-    if (!("Notification" in window)) return setNotificationStatus("unsupported");
-    const permission = await Notification.requestPermission();
-    setNotificationStatus(permission);
-  };
-
-  async function checkNearbyHazards() {
-    setLocationStatus("loading");
-    try {
-      const { lat, lng } = await getCurrentLocation({ timeout: 15000, targetAccuracy: 12 });
-      setLocationStatus("granted");
-      const allHazards = [
-        ...confirmedHazards.map((h) => ({ id: h.id, title: h.name, severity: h.severityLabel, coords: h.coordinates })),
-        ...getLocalReports().map((r) => ({ id: r.id, title: r.hazardType, severity: r.status === "verified" ? "Verified" : "Pending", location: r.location, coords: r.coordinates })),
-      ].filter((h) => h.coords?.lat && h.coords?.lng);
-      const nearby = allHazards.map((h) => ({ ...h, distance: distanceKm(lat, lng, h.coords.lat, h.coords.lng) })).filter((h) => h.distance <= ALERT_RADIUS_KM).sort((a, b) => a.distance - b.distance);
-      setActiveAlerts(nearby);
-      setHistory(allHazards.filter((h) => !nearby.some((n) => n.id === h.id)));
-
-      const alreadyNotified = JSON.parse(localStorage.getItem(NOTIFIED_KEY) || "[]");
-      const fresh = nearby.filter((h) => !alreadyNotified.includes(h.id));
-      fresh.slice(0, 3).forEach(browserNotify);
-      localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...new Set([...alreadyNotified, ...fresh.map((h) => h.id)])].slice(-100)));
-    } catch {
-      setLocationStatus("denied");
-    }
-  }
-
-  useEffect(() => {
-    if ("Notification" in window) setNotificationStatus(Notification.permission);
-    checkNearbyHazards();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const listToShow = useMemo(() => (tab === "active" ? activeAlerts : history), [tab, activeAlerts, history]);
-
-  return (
-    <div className="screen">
-      <TopBar variant="back" title="Alerts" onBack={() => onNavigate("home")} />
-      <div className="alert-settings-card">
-        <div><div className="alert-settings-title"><Bell size={17} /> Safety notifications</div><div className="alert-settings-sub">Get a browser alert when nearby hazards are detected.</div></div>
-        <button className="notify-btn" onClick={requestNotifications} disabled={notificationStatus === "granted"}>{notificationStatus === "granted" ? "Enabled" : "Enable"}</button>
-      </div>
-      <div className="tabs">
-        <button className={`tab ${tab === "active" ? "active" : ""}`} onClick={() => setTab("active")}>Active {activeAlerts.length > 0 && <span className="tab-count">{activeAlerts.length}</span>}</button>
-        <button className={`tab ${tab === "history" ? "active" : ""}`} onClick={() => setTab("history")}>History</button>
-      </div>
-      {locationStatus === "loading" && <p className="empty-state">Checking your location…</p>}
-      {locationStatus === "denied" && <div className="card location-permission"><p>Location permission nahi mili — nearby hazards check nahi ho sakte.</p><button onClick={checkNearbyHazards}><LocateFixed size={14} /> Try again</button></div>}
-      {locationStatus === "granted" && listToShow.length === 0 && <p className="empty-state">{tab === "active" ? `No hazard within ${ALERT_RADIUS_KM} km.` : "No alert history yet."}</p>}
-      {listToShow.map((alert) => (
-        <div className="card alert-card" key={alert.id}>
-          <div className="alert-dot" />
-          <div className="alert-card-content"><div className="card-title">{alert.title}</div><div className="card-meta">{alert.location ? `${alert.location} · ` : ""}{alert.distance !== undefined ? `${alert.distance < 1 ? `${Math.round(alert.distance * 1000)} m` : `${alert.distance.toFixed(1)} km`} away` : ""}{alert.severity ? ` · ${alert.severity}` : ""}</div></div>
-        </div>
-      ))}
-      <BottomNav active="alerts" onNavigate={onNavigate} alertCount={activeAlerts.length} />
-    </div>
-  );
+  const [tab, setTab] = useState("active"); const [locationStatus, setLocationStatus] = useState("idle"); const [activeAlerts, setActiveAlerts] = useState([]); const [history, setHistory] = useState([]); const [notificationStatus, setNotificationStatus] = useState("default");
+  const requestNotifications = async () => { if (!("Notification" in window)) return setNotificationStatus("unsupported"); setNotificationStatus(await Notification.requestPermission()); };
+  async function checkNearbyHazards() { setLocationStatus("loading"); try { const { lat, lng } = await getCurrentLocation({ timeout: 15000, targetAccuracy: 12 }); setLocationStatus("granted"); const allHazards = [...confirmedHazards.map((h) => ({ id: h.id, title: h.name, severity: h.severityLabel, coords: h.coordinates })), ...getLocalReports().map((r) => ({ id: r.id, title: r.hazardType, severity: r.status === "verified" ? "Verified" : "Pending", location: r.location, coords: r.coordinates }))].filter((h) => h.coords?.lat && h.coords?.lng); const nearby = allHazards.map((h) => ({ ...h, distance: distanceKm(lat, lng, h.coords.lat, h.coords.lng) })).filter((h) => h.distance <= ALERT_RADIUS_KM).sort((a, b) => a.distance - b.distance); setActiveAlerts(nearby); setHistory(allHazards.filter((h) => !nearby.some((n) => n.id === h.id))); const alreadyNotified = JSON.parse(localStorage.getItem(NOTIFIED_KEY) || "[]"); const fresh = nearby.filter((h) => !alreadyNotified.includes(h.id)); fresh.slice(0, 3).forEach(browserNotify); localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...new Set([...alreadyNotified, ...fresh.map((h) => h.id)])].slice(-100))); } catch { setLocationStatus("denied"); } }
+  useEffect(() => { if ("Notification" in window) setNotificationStatus(Notification.permission); checkNearbyHazards(); }, []);
+  const listToShow = useMemo(() => tab === "active" ? activeAlerts : history, [tab, activeAlerts, history]);
+  return <div className="screen"><TopBar variant="back" title="Alerts" onBack={() => onNavigate("home")} onNavigate={onNavigate} /><div className="alert-settings-card"><div><div className="alert-settings-title"><Bell size={17} /> Safety notifications</div><div className="alert-settings-sub">Get a browser alert when nearby hazards are detected.</div></div><button className="notify-btn" onClick={requestNotifications} disabled={notificationStatus === "granted"}>{notificationStatus === "granted" ? "Enabled" : "Enable"}</button></div><div className="tabs"><button className={`tab ${tab === "active" ? "active" : ""}`} onClick={() => setTab("active")}>Active {activeAlerts.length > 0 && <span className="tab-count">{activeAlerts.length}</span>}</button><button className={`tab ${tab === "history" ? "active" : ""}`} onClick={() => setTab("history")}>History</button></div>{locationStatus === "loading" && <p className="empty-state">Checking your location…</p>}{locationStatus === "denied" && <div className="card location-permission"><p>Location permission nahi mili — nearby hazards check nahi ho sakte.</p><button onClick={checkNearbyHazards}><LocateFixed size={14} /> Try again</button></div>}{locationStatus === "granted" && listToShow.length === 0 && <p className="empty-state">{tab === "active" ? `No hazard within ${ALERT_RADIUS_KM} km.` : "No alert history yet."}</p>}{listToShow.map((alert) => <div className="card alert-card" key={alert.id}><div className="alert-dot" /><div className="alert-card-content"><div className="card-title">{alert.title}</div><div className="card-meta">{alert.location ? `${alert.location} · ` : ""}{alert.distance !== undefined ? `${alert.distance < 1 ? `${Math.round(alert.distance * 1000)} m` : `${alert.distance.toFixed(1)} km`} away` : ""}{alert.severity ? ` · ${alert.severity}` : ""}</div></div></div>)}<BottomNav active="alerts" onNavigate={onNavigate} alertCount={activeAlerts.length} /></div>;
 }
