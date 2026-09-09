@@ -16,6 +16,15 @@ const HAZARD_CLOSE_RADIUS_M = 20;
 
 const selectedPinIcon = L.divIcon({ className: "", html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:#6d28d9;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`, iconSize: [26, 26], iconAnchor: [13, 26] });
 
+function getHomeGreeting(hour) {
+  if (hour >= 5 && hour < 11) return { title: "Good morning", message: "Start your day with a safer route" };
+  if (hour >= 11 && hour < 14) return { title: "Good afternoon", message: "Stay alert and enjoy the road ahead" };
+  if (hour >= 14 && hour < 17) return { title: "Hope your afternoon is going well", message: "Let RoadSense help you travel safer" };
+  if (hour >= 17 && hour < 21) return { title: "Good evening", message: "Take the safer way home" };
+  if (hour >= 21 || hour < 1) return { title: "Good night", message: "Stay sharp and get home safe" };
+  return { title: "Late-night drive?", message: "Keep it steady and let RoadSense watch the road" };
+}
+
 function RecenterMap({ center, zoom }) {
   const map = useMap();
   useEffect(() => { if (center) map.setView([center.lat, center.lng], zoom ?? map.getZoom(), { animate: true, duration: 0.35 }); }, [center?.lat, center?.lng, zoom, map]);
@@ -48,7 +57,7 @@ function vibrateSafety(close = false) {
   if (navigator.vibrate) navigator.vibrate(close ? [90, 70, 90] : [70]);
 }
 
-export default function HomeScreen({ onNavigate, selectedLocation, theme, onToggleTheme, onNotifications, onMenu }) {
+export default function HomeScreen({ onNavigate, selectedLocation, theme, onToggleTheme, onNotifications, onMenu, user }) {
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -103,6 +112,8 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
   const origin = userLocation || DEFAULT_CENTER;
   const allNearbyCandidates = [...confirmedHazards, ...getLocalReports()].filter((h) => h.coordinates?.lat && h.coordinates?.lng);
   const nearestAlert = allNearbyCandidates.map((h) => ({ ...h, distance: distanceKm(origin.lat, origin.lng, h.coordinates.lat, h.coordinates.lng) })).sort((a, b) => a.distance - b.distance)[0] || confirmedHazards[0];
+  const greeting = getHomeGreeting(new Date().getHours());
+  const firstName = user?.name?.trim()?.split(/\s+/)[0];
 
   const locateNow = async () => {
     setLocating(true);
@@ -113,7 +124,12 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
   return (
     <div className="screen home-screen">
       <TopBar variant="home" title="RoadSense" theme={theme} onToggleTheme={onToggleTheme} onNotifications={onNotifications} onMenu={onMenu} />
-      <div className="search-input" onClick={() => onNavigate("search")}>{selectedLocation ? selectedLocation.name : "Search destination"}</div>
+      <section className="welcome-card" aria-label="Welcome message">
+        <div className="welcome-eyebrow">{greeting.title}{firstName ? `, ${firstName}` : ""}</div>
+        <h1>{greeting.message}</h1>
+        <p>RoadSense is here to help you spot hazards early and travel with confidence</p>
+      </section>
+      <div className="search-input" onClick={() => onNavigate("search")}>{selectedLocation ? selectedLocation.name : "Where are you heading?"}</div>
       <div className="map-wrapper">
         <MapContainer center={[mapCenter.lat, mapCenter.lng]} zoom={14} zoomControl preferCanvas style={{ height: "100%", width: "100%" }}>
           <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
