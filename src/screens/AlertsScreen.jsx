@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Bell, LocateFixed, Play, Volume2, CheckCircle2, AlertTriangle, Droplets, Construction, CarFront } from "lucide-react";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
+import "./AlertsScreen.css";
 import { confirmedHazards } from "../sampleData";
 import { getLocalReports } from "../firebase";
 import { distanceKm, getCurrentLocation } from "../utils/geo";
@@ -104,43 +105,20 @@ export default function AlertsScreen({ onNavigate }) {
   return (
     <div className="screen">
       <TopBar variant="back" title="Alerts" onBack={() => onNavigate("home")} onNavigate={onNavigate} />
-
       <div className="alert-settings-card">
         <div><div className="alert-settings-title"><Bell size={17} /> Safety notifications</div><div className="alert-settings-sub">Get a browser alert and your chosen sound when nearby hazards are detected.</div></div>
         <button className="notify-btn" onClick={requestNotifications} disabled={notificationStatus === "granted"}>{notificationStatus === "granted" ? "Enabled" : "Enable"}</button>
       </div>
-
       <section className="alert-preferences-panel">
         <div className="alert-panel-heading"><div><span className="alert-panel-kicker">Make it yours</span><h2>Choose your alert sound</h2></div><Volume2 size={20} /></div>
         <p>Pick a tone you will recognize quickly while driving. You can change it anytime.</p>
-        <div className="tone-list">
-          {ALERT_TONES.map((item) => (
-            <button key={item.id} className={`tone-option ${tone === item.id ? "selected" : ""}`} onClick={() => { setTone(item.id); playTone(item.id); }}>
-              <span className="tone-check">{tone === item.id ? <CheckCircle2 size={18} /> : <span />}</span>
-              <span className="tone-copy"><strong>{item.name}</strong><small>{item.description}</small></span>
-              <Play size={15} />
-            </button>
-          ))}
-        </div>
+        <div className="tone-list">{ALERT_TONES.map((item) => <button key={item.id} className={`tone-option ${tone === item.id ? "selected" : ""}`} onClick={() => { setTone(item.id); playTone(item.id); }}><span className="tone-check">{tone === item.id ? <CheckCircle2 size={18} /> : <span />}</span><span className="tone-copy"><strong>{item.name}</strong><small>{item.description}</small></span><Play size={15} /></button>)}</div>
         <div className="tone-selected-note">Selected: <strong>{selectedTone.name}</strong> · Tap any sound to preview it</div>
       </section>
-
       <section className="sample-alert-panel">
-        <button className="sample-alert-toggle" onClick={() => setShowSamples((value) => !value)}>
-          <div><span className="alert-panel-kicker">Try it before you drive</span><strong>Sample alerts</strong><small>See exactly what a RoadSense warning can look and sound like</small></div>
-          <span>{showSamples ? "Hide" : "Preview"}</span>
-        </button>
-        {showSamples && <div className="sample-alert-list">
-          {SAMPLE_ALERTS.map((sample) => { const Icon = sample.Icon; return (
-            <div className="sample-alert" key={sample.id}>
-              <div className="sample-alert-icon"><Icon size={18} /></div>
-              <div className="sample-alert-copy"><strong>{sample.title}</strong><span>{sample.message}</span><small>{sample.severity} priority · Example warning</small></div>
-              <button aria-label={`Test ${sample.title} alert`} onClick={() => playTone(tone)}><Play size={15} /></button>
-            </div>
-          ); })}
-        </div>}
+        <button className="sample-alert-toggle" onClick={() => setShowSamples((value) => !value)}><div><span className="alert-panel-kicker">Try it before you drive</span><strong>Sample alerts</strong><small>See exactly what a RoadSense warning can look and sound like</small></div><span>{showSamples ? "Hide" : "Preview"}</span></button>
+        {showSamples && <div className="sample-alert-list">{SAMPLE_ALERTS.map((sample) => { const Icon = sample.Icon; return <div className="sample-alert" key={sample.id}><div className="sample-alert-icon"><Icon size={18} /></div><div className="sample-alert-copy"><strong>{sample.title}</strong><span>{sample.message}</span><small>{sample.severity} priority · Example warning</small></div><button aria-label={`Test ${sample.title} alert`} onClick={() => playTone(tone)}><Play size={15} /></button></div>; })}</div>}
       </section>
-
       <div className="tabs"><button className={`tab ${tab === "active" ? "active" : ""}`} onClick={() => setTab("active")}>Active {activeAlerts.length > 0 && <span className="tab-count">{activeAlerts.length}</span>}</button><button className={`tab ${tab === "history" ? "active" : ""}`} onClick={() => setTab("history")}>History</button></div>
       {locationStatus === "loading" && <p className="empty-state">Checking your location…</p>}
       {locationStatus === "denied" && <div className="card location-permission"><p>Location permission nahi mili — nearby hazards check nahi ho sakte.</p><button onClick={checkNearbyHazards}><LocateFixed size={14} /> Try again</button></div>}
