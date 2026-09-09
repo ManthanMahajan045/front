@@ -35,17 +35,20 @@ export default function AuthScreen({ onAuthenticated }) {
   return (
     <main className="auth-screen">
       <style>{`
-        .auth-screen .auth-brand strong,.auth-screen .auth-brand span,.auth-screen .auth-form label > span,.auth-screen .auth-switch,.auth-screen .auth-legal,.auth-screen .auth-methods button,.auth-screen .auth-input input,.auth-screen .auth-socials button { opacity: 1 !important; }
-        .auth-screen .auth-brand strong { color: var(--text) !important; }
-        .auth-screen .auth-brand span { color: var(--muted) !important; }
-        .auth-screen .auth-form label > span { color: var(--text) !important; }
+        .auth-screen .auth-brand strong,.auth-screen .auth-brand span,.auth-screen .auth-form label > span,.auth-screen .auth-switch,.auth-screen .auth-legal,.auth-screen .auth-methods button,.auth-screen .auth-input input,.auth-screen .auth-socials button { opacity: 1 !important; filter: none !important; mix-blend-mode: normal !important; }
+        .auth-screen .auth-brand strong { color: #111827 !important; -webkit-text-fill-color: #111827 !important; opacity: 1 !important; text-shadow: none !important; }
+        html[data-theme="dark"] .auth-screen .auth-brand strong { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+        .auth-screen .auth-brand span { color: var(--muted) !important; -webkit-text-fill-color: var(--muted) !important; }
+        .auth-screen .auth-form label > span { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
         .auth-screen .auth-input { color: var(--text) !important; opacity: 1 !important; }
         .auth-screen .auth-input input { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
         .auth-screen .auth-input input::placeholder,.auth-screen .auth-otp::placeholder { color: var(--muted) !important; opacity: 1 !important; -webkit-text-fill-color: var(--muted) !important; }
-        .auth-screen .auth-methods button { color: var(--text) !important; }
-        .auth-screen .auth-switch { color: var(--text) !important; opacity: 1 !important; }
-        .auth-screen .auth-switch .auth-switch-text { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; opacity: 1 !important; }
-        .auth-screen .auth-switch button { color: #6d28d9 !important; -webkit-text-fill-color: #6d28d9 !important; opacity: 1 !important; font-weight: 700 !important; }
+        .auth-screen .auth-methods button { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+        .auth-screen .auth-switch { color: #111827 !important; -webkit-text-fill-color: #111827 !important; opacity: 1 !important; visibility: visible !important; display: block !important; position: relative !important; z-index: 20 !important; filter: none !important; mix-blend-mode: normal !important; }
+        html[data-theme="dark"] .auth-screen .auth-switch { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+        .auth-screen .auth-switch .auth-switch-text { color: #111827 !important; -webkit-text-fill-color: #111827 !important; opacity: 1 !important; visibility: visible !important; }
+        html[data-theme="dark"] .auth-screen .auth-switch .auth-switch-text { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+        .auth-screen .auth-switch button { color: #6d28d9 !important; -webkit-text-fill-color: #6d28d9 !important; opacity: 1 !important; visibility: visible !important; font-weight: 700 !important; }
         .auth-screen .auth-legal { color: var(--muted) !important; }
       `}</style>
       <section className="auth-card" aria-label={mode === "login" ? "Log in to RoadSense" : "Create a RoadSense account"}>
@@ -72,7 +75,7 @@ export default function AuthScreen({ onAuthenticated }) {
           <div className="auth-divider"><span>or continue with</span></div>
           <div className="auth-socials"><button type="button" onClick={() => setError("Google sign-in will activate when Firebase Authentication is connected.")}>Google</button><button type="button" onClick={() => setError("Apple sign-in will activate when Firebase Authentication is connected.")}><Apple size={16} /> Apple</button></div>
         </>}
-        <p className="auth-switch" style={{ opacity: 1, color: "#111827", WebkitTextFillColor: "#111827", filter: "none" }}><span className="auth-switch-text" style={{ color: "#111827", WebkitTextFillColor: "#111827", opacity: 1 }}>Don’t have an account?</span>{" "}<button type="button" style={{ color: "#6d28d9", WebkitTextFillColor: "#6d28d9", opacity: 1, fontWeight: 700 }} onClick={() => switchMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? "Sign up" : "Log in"}</button></p>
+        <p className="auth-switch" style={{ opacity: 1, visibility: "visible", display: "block", position: "relative", zIndex: 20, marginTop: 12, marginBottom: 8, color: "#111827", WebkitTextFillColor: "#111827", filter: "none", mixBlendMode: "normal" }}><span className="auth-switch-text" style={{ color: "#111827", WebkitTextFillColor: "#111827", opacity: 1, visibility: "visible" }}>Don’t have an account?</span>{" "}<button type="button" style={{ color: "#6d28d9", WebkitTextFillColor: "#6d28d9", opacity: 1, visibility: "visible", fontWeight: 700 }} onClick={() => switchMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? "Sign up" : "Log in"}</button></p>
         <p className="auth-legal">By continuing, you agree to RoadSense's Terms and Privacy Policy.</p>
       </section>
     </main>
