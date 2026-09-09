@@ -36,7 +36,7 @@ export default function AuthScreen({ onAuthenticated }) {
     <main className="auth-screen">
       <style>{`
         .auth-screen .auth-brand strong,.auth-screen .auth-brand span,.auth-screen .auth-form label > span,.auth-screen .auth-switch,.auth-screen .auth-legal,.auth-screen .auth-methods button,.auth-screen .auth-input input,.auth-screen .auth-socials button { opacity: 1 !important; filter: none !important; mix-blend-mode: normal !important; }
-        .auth-screen .auth-brand strong { display:block !important; position:relative !important; z-index:50 !important; color:#000000 !important; -webkit-text-fill-color:#000000 !important; opacity:1 !important; visibility:visible !important; text-shadow:none !important; font-size:32px !important; line-height:1.15 !important; margin:0 0 6px !important; }
+        .auth-screen .auth-brand strong { display:block !important; position:relative !important; z-index:50 !important; color:#000000 !important; -webkit-text-fill-color:#000000 !important; opacity:1 !important; visibility:visible !important; text-shadow:none !important; font-size:38px !important; font-weight:800 !important; line-height:1.15 !important; letter-spacing:-1.4px !important; margin:10px 0 7px !important; }
         .auth-screen .auth-brand span { color: #6b7280 !important; -webkit-text-fill-color: #6b7280 !important; }
         .auth-screen .auth-form label > span { color: #111111 !important; -webkit-text-fill-color: #111111 !important; }
         .auth-screen .auth-input { color: #111111 !important; opacity: 1 !important; }
@@ -68,7 +68,7 @@ export default function AuthScreen({ onAuthenticated }) {
       `}</style>
       <section className="auth-card" aria-label={mode === "login" ? "Log in to RoadSense" : "Create a RoadSense account"}>
         {mode === "signup" && <button className="auth-back" type="button" onClick={() => switchMode("login")} aria-label="Back to login"><ArrowLeft size={19} /></button>}
-        <div className="auth-brand"><strong style={{color:"#000",WebkitTextFillColor:"#000",opacity:1,visibility:"visible",fontSize:"32px",fontWeight:700,lineHeight:1.15}}>RoadSense</strong><span>See the road ahead, travel safer</span></div>
+        <div className="auth-brand"><strong style={{color:"#000",WebkitTextFillColor:"#000",opacity:1,visibility:"visible",fontSize:"38px",fontWeight:800,lineHeight:1.15,letterSpacing:"-1.4px"}}>RoadSense</strong><span>See the road ahead, travel safer</span></div>
         <div className="auth-methods" role="tablist" aria-label="Login method">
           <button type="button" className={method === "email" ? "active" : ""} onClick={() => switchMethod("email")} role="tab" aria-selected={method === "email"}>Email</button>
           <button type="button" className={method === "phone" ? "active" : ""} onClick={() => switchMethod("phone")} role="tab" aria-selected={method === "phone"}>Phone</button>
