@@ -10,6 +10,7 @@ import ProfileScreen from "./screens/ProfileScreen";
 import AlertsScreen from "./screens/AlertsScreen";
 import ReportsScreen from "./screens/ReportsScreen";
 import DirectionsScreen from "./screens/DirectionsScreen";
+import AuthorityDashboard from "./screens/AuthorityDashboard";
 import SideMenu from "./components/SideMenu";
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
       {screen === "profile" && <ProfileScreen {...screenProps} />}
       {screen === "alerts" && <AlertsScreen {...screenProps} />}
       {screen === "reports" && <ReportsScreen {...screenProps} />}
+      {screen === "authority" && <AuthorityDashboard {...screenProps} onBack={() => navigate("home")} />}
       {menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} />}
     </div>
   );
