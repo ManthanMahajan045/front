@@ -2,6 +2,25 @@ import { useState } from "react";
 import { Apple, ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 
 const AUTH_KEY = "roadsense-auth";
+const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const INDIAN_MOBILE_REGEX = /^[6-9]\d{9}$/;
+
+const isValidEmail = (value) => {
+  const email = value.trim();
+  if (!EMAIL_REGEX.test(email)) return false;
+  if (email.includes("..")) return false;
+  const [local, domain] = email.split("@");
+  if (!local || !domain || local.length > 64 || domain.length > 253) return false;
+  if (domain.startsWith(".") || domain.endsWith(".") || domain.includes("..")) return false;
+  return true;
+};
+
+const isValidIndianPhone = (value) => {
+  const digits = value.replace(/\D/g, "");
+  if (!INDIAN_MOBILE_REGEX.test(digits)) return false;
+  if (/^(\d)\1{9}$/.test(digits)) return false;
+  return true;
+};
 
 export default function AuthScreen({ onAuthenticated }) {
   const [mode, setMode] = useState("login");
@@ -18,8 +37,8 @@ export default function AuthScreen({ onAuthenticated }) {
   const submit = (event) => {
     event.preventDefault();
     setError("");
-    if (method === "email" && !email.trim()) return setError("Enter your email address.");
-    if (method === "phone" && phone.replace(/\D/g, "").length < 10) return setError("Enter a valid 10-digit mobile number.");
+    if (method === "email" && !isValidEmail(email)) return setError("Enter a valid email address, for example name@gmail.com.");
+    if (method === "phone" && !isValidIndianPhone(phone)) return setError("Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.");
     if (method === "email" && password.length < 6) return setError("Password must be at least 6 characters.");
     if (mode === "signup" && !name.trim()) return setError("Enter your name.");
     if (method === "phone" && !otpSent) return setOtpSent(true);
@@ -80,7 +99,7 @@ export default function AuthScreen({ onAuthenticated }) {
             <label><span>Password</span><div className="auth-input"><LockKeyhole size={17} /><input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder="Enter your password" /><button type="button" className="auth-icon-button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
             {mode === "login" && <button type="button" className="auth-forgot" onClick={() => setError("Password reset is available once Firebase Authentication is connected.")}>Forgot password?</button>}
           </> : <>
-            <label><span>Mobile number</span><div className="auth-phone-row"><div className="auth-input country"><Phone size={17} /><b>+91</b><input inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} autoComplete="tel" placeholder="Mobile number" /></div><button type="button" className="auth-secondary" onClick={() => { if (phone.replace(/\D/g, "").length >= 10) setOtpSent(true); else setError("Enter your 10-digit mobile number first."); }}>{otpSent ? "Sent" : "Send OTP"}</button></div></label>
+            <label><span>Mobile number</span><div className="auth-phone-row"><div className="auth-input country"><Phone size={17} /><b>+91</b><input inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} autoComplete="tel" placeholder="Mobile number" /></div><button type="button" className="auth-secondary" onClick={() => { if (isValidIndianPhone(phone)) setOtpSent(true); else setError("Enter a valid 10-digit Indian mobile number first."); }}>{otpSent ? "Sent" : "Send OTP"}</button></div></label>
             {otpSent && <label><span>Enter OTP</span><input className="auth-otp" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="• • • • • •" autoComplete="one-time-code" /><small>Demo OTP: enter any 6 digits</small></label>}
           </>}
           {error && <div className="auth-error" role="alert">{error}</div>}
