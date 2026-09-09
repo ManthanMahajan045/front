@@ -52,7 +52,7 @@ export default function AuthScreen({ onAuthenticated }) {
       `}</style>
       <section className="auth-card" aria-label={mode === "login" ? "Log in to RoadSense" : "Create a RoadSense account"}>
         {mode === "signup" && <button className="auth-back" type="button" onClick={() => switchMode("login")} aria-label="Back to login"><ArrowLeft size={19} /></button>}
-        <div className="auth-brand"><strong>RoadSense</strong><span>Smart roads. Safer journeys.</span></div>
+        <div className="auth-brand"><strong>RoadSense</strong><span>See the road ahead, travel safer</span></div>
         <div className="auth-methods" role="tablist" aria-label="Login method">
           <button type="button" className={method === "email" ? "active" : ""} onClick={() => switchMethod("email")} role="tab" aria-selected={method === "email"}>Email</button>
           <button type="button" className={method === "phone" ? "active" : ""} onClick={() => switchMethod("phone")} role="tab" aria-selected={method === "phone"}>Phone</button>
