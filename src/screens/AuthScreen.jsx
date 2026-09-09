@@ -36,7 +36,7 @@ export default function AuthScreen({ onAuthenticated }) {
     <main className="auth-screen">
       <style>{`
         .auth-screen .auth-brand strong,.auth-screen .auth-brand span,.auth-screen .auth-form label > span,.auth-screen .auth-switch,.auth-screen .auth-legal,.auth-screen .auth-methods button,.auth-screen .auth-input input,.auth-screen .auth-socials button { opacity: 1 !important; filter: none !important; mix-blend-mode: normal !important; }
-        .auth-screen .auth-brand strong { color: #111111 !important; -webkit-text-fill-color: #111111 !important; opacity: 1 !important; text-shadow: none !important; }
+        .auth-screen .auth-brand strong { display:block !important; color:#000000 !important; -webkit-text-fill-color:#000000 !important; opacity:1 !important; visibility:visible !important; text-shadow:none !important; }
         .auth-screen .auth-brand span { color: #6b7280 !important; -webkit-text-fill-color: #6b7280 !important; }
         .auth-screen .auth-form label > span { color: #111111 !important; -webkit-text-fill-color: #111111 !important; }
         .auth-screen .auth-input { color: #111111 !important; opacity: 1 !important; }
