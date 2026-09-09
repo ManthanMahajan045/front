@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Bell, ChevronRight, Globe2, HelpCircle, FileText, Home, LogOut, MapPin, ShieldCheck, X } from "lucide-react";
+import { Bell, ChevronRight, Globe2, HelpCircle, FileText, Home, LogOut, MapPin, ShieldCheck, LayoutDashboard, X } from "lucide-react";
 
 const ITEMS = [
   { key: "home", label: "Home", icon: Home, navigate: "home" },
   { key: "report", label: "Report an Issue", icon: FileText, navigate: "report" },
   { key: "reports", label: "My Reports", icon: FileText, navigate: "reports" },
   { key: "alerts", label: "Alert Preferences", icon: Bell, navigate: "alerts" },
+  { key: "authority", label: "Authority Dashboard", icon: LayoutDashboard, navigate: "authority" },
   { key: "trusted", label: "Trusted contacts / Emergency Sharing", icon: ShieldCheck },
   { key: "help", label: "How RoadSense works", icon: HelpCircle },
 ];
@@ -33,7 +34,7 @@ export default function SideMenu({ onClose, onNavigate }) {
           {ITEMS.map((item) => {
             const Icon = item.icon;
             return (
-              <button key={item.key} className="side-menu-row" onClick={() => handleItem(item)}>
+              <button key={item.key} className={`side-menu-row ${item.key === "authority" ? "authority-menu-row" : ""}`} onClick={() => handleItem(item)}>
                 <Icon size={18} />
                 <span>{item.label}</span>
                 <ChevronRight size={16} />
