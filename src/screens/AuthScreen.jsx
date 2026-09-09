@@ -55,7 +55,7 @@ export default function AuthScreen({ onAuthenticated }) {
     <main className="auth-screen">
       <style>{`
         .auth-screen .auth-brand strong,.auth-screen .auth-brand span,.auth-screen .auth-form label > span,.auth-screen .auth-switch,.auth-screen .auth-legal,.auth-screen .auth-methods button,.auth-screen .auth-input input,.auth-screen .auth-socials button { opacity: 1 !important; filter: none !important; mix-blend-mode: normal !important; }
-        .auth-screen .auth-brand strong { display:block !important; position:relative !important; z-index:50 !important; color:var(--text) !important; -webkit-text-fill-color:var(--text) !important; opacity:1 !important; visibility:visible !important; text-shadow:none !important; font-size:38px !important; font-weight:800 !important; line-height:1.15 !important; letter-spacing:-1.4px !important; margin:10px 0 7px !important; }
+        .auth-screen .auth-brand strong { display:block !important; position:relative !important; z-index:50 !important; color:#7c3aed !important; -webkit-text-fill-color:#7c3aed !important; opacity:1 !important; visibility:visible !important; text-shadow:0 2px 14px rgba(124,58,237,.16) !important; font-size:38px !important; font-weight:850 !important; line-height:1.15 !important; letter-spacing:-1.4px !important; margin:10px 0 7px !important; }
         .auth-screen .auth-brand span { color: var(--muted) !important; -webkit-text-fill-color: var(--muted) !important; }
         .auth-screen .auth-form label > span { color: var(--text) !important; -webkit-text-fill-color:var(--text) !important; }
         .auth-screen .auth-input { color: var(--text) !important; opacity: 1 !important; }
