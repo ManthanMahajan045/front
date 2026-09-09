@@ -38,6 +38,12 @@ export default function App() {
     }
   }, [language]);
 
+  const changeLanguage = (nextLanguage) => {
+    setLanguage(nextLanguage);
+    if (nextLanguage === "en") {
+      window.setTimeout(() => window.location.reload(), 0);
+    }
+  };
   const toggleTheme = () => setTheme((current) => current === "dark" ? "light" : "dark");
   const navigate = (next) => { setScreen(next); setMenuOpen(false); };
   const screenProps = { onNavigate: navigate, theme, onToggleTheme: toggleTheme, onMenu: () => setMenuOpen(true), language, user };
@@ -54,7 +60,7 @@ export default function App() {
       {screen === "alerts" && <AlertsScreen {...screenProps} />}
       {screen === "reports" && <ReportsScreen {...screenProps} />}
       {screen === "authority" && <AuthorityDashboard {...screenProps} onBack={() => navigate("home")} />}
-      {menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={setLanguage} />}
+      {menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={changeLanguage} />}
     </div>
   );
 }
