@@ -23,14 +23,14 @@ export default function App() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_KEY) || "en");
-  const [theme, setTheme] = useState(() => { const saved = localStorage.getItem("roadsense-theme"); return saved || (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light"); });
+  const [theme, setTheme] = useState(() => { const saved = localStorage.getItem("roadsense-theme"); return saved || (window.matchMedia?.("(prefers-color-scheme: dark").matches ? "dark" : "light"); });
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("roadsense-theme", theme); }, [theme]);
   useEffect(() => { localStorage.setItem(LANGUAGE_KEY, language); }, [language]);
 
   const toggleTheme = () => setTheme((current) => current === "dark" ? "light" : "dark");
   const navigate = (next) => { setScreen(next); setMenuOpen(false); };
-  const screenProps = { onNavigate: navigate, theme, onToggleTheme: toggleTheme, onMenu: () => setMenuOpen(true), language };
+  const screenProps = { onNavigate: navigate, theme, onToggleTheme: toggleTheme, onMenu: () => setMenuOpen(true), language, user };
 
   if (!user) return <div className="app-shell auth-app-shell"><AuthScreen onAuthenticated={(nextUser) => { localStorage.setItem(AUTH_KEY, JSON.stringify(nextUser)); setUser(nextUser); }} /></div>;
 
