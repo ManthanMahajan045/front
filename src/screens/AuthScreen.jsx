@@ -35,6 +35,26 @@ export default function AuthScreen({ onAuthenticated }) {
 
   return (
     <main className="auth-screen">
+      <style>{`
+        .auth-screen .auth-brand strong,
+        .auth-screen .auth-brand span,
+        .auth-screen .auth-form label > span,
+        .auth-screen .auth-switch,
+        .auth-screen .auth-legal,
+        .auth-screen .auth-methods button,
+        .auth-screen .auth-input input,
+        .auth-screen .auth-socials button { opacity: 1 !important; }
+        .auth-screen .auth-brand strong { color: var(--text) !important; }
+        .auth-screen .auth-brand span { color: var(--muted) !important; }
+        .auth-screen .auth-form label > span { color: var(--text) !important; }
+        .auth-screen .auth-input { color: var(--text) !important; opacity: 1 !important; }
+        .auth-screen .auth-input input { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+        .auth-screen .auth-input input::placeholder,
+        .auth-screen .auth-otp::placeholder { color: var(--muted) !important; opacity: 1 !important; -webkit-text-fill-color: var(--muted) !important; }
+        .auth-screen .auth-methods button { color: var(--text) !important; }
+        .auth-screen .auth-switch { color: var(--text) !important; }
+        .auth-screen .auth-legal { color: var(--muted) !important; }
+      `}</style>
       <section className="auth-card" aria-label={mode === "login" ? "Log in to RoadSense" : "Create a RoadSense account"}>
         {mode === "signup" && <button className="auth-back" type="button" onClick={() => switchMode("login")} aria-label="Back to login"><ArrowLeft size={19} /></button>}
         <div className="auth-brand"><strong>RoadSense</strong><span>Smart roads. Safer journeys.</span></div>
