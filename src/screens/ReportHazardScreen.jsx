@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Camera, X, MapPin } from "lucide-react";
+import { Camera, ImagePlus, X, MapPin } from "lucide-react";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import { hazardTypeOptions } from "../sampleData";
@@ -13,7 +13,8 @@ export default function ReportHazardScreen({ onNavigate }) {
   const [photo, setPhoto] = useState(null);
   const [coords, setCoords] = useState(null);
   const [address, setAddress] = useState("Detecting your location…");
-  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   useEffect(() => {
     getCurrentLocation()
@@ -31,6 +32,7 @@ export default function ReportHazardScreen({ onNavigate }) {
     const reader = new FileReader();
     reader.onload = () => setPhoto(reader.result);
     reader.readAsDataURL(file);
+    e.target.value = "";
   }
 
   async function handleSubmit() {
@@ -50,11 +52,19 @@ export default function ReportHazardScreen({ onNavigate }) {
     <div className="screen report-screen">
       <TopBar variant="back" title="Report a Hazard" onBack={() => onNavigate("home")} />
       <p className="report-intro">Help other drivers by reporting hazards on the road.</p>
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} style={{ display: "none" }} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} style={{ display: "none" }} />
+      <input ref={galleryInputRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: "none" }} />
       {photo ? (
         <div className="photo-preview-wrap"><img src={photo} alt="Hazard preview" className="photo-preview" /><button className="photo-remove" onClick={() => setPhoto(null)} aria-label="Remove photo"><X size={16} /></button></div>
       ) : (
-        <button className="photo-placeholder" onClick={() => fileInputRef.current?.click()}><Camera size={28} /><strong>Add Photo</strong><span>Show the hazard clearly</span></button>
+        <div className="photo-upload-area">
+          <div className="photo-upload-heading"><ImagePlus size={22} /><strong>Add a photo</strong></div>
+          <span className="photo-upload-hint">Capture the hazard now or choose a photo from your phone</span>
+          <div className="photo-upload-actions">
+            <button type="button" className="photo-upload-option" onClick={() => cameraInputRef.current?.click()}><Camera size={19} /><span>Camera</span></button>
+            <button type="button" className="photo-upload-option" onClick={() => galleryInputRef.current?.click()}><ImagePlus size={19} /><span>Gallery</span></button>
+          </div>
+        </div>
       )}
       <div className="section-label">What did you find?</div>
       <div className="hazard-grid">{hazardTypeOptions.map((type) => <button key={type} className={`hazard-option ${selectedType === type ? "selected" : ""}`} onClick={() => setSelectedType(type)}>{type}</button>)}</div>
