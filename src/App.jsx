@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import AuthScreen from "./screens/AuthScreen";
 import HomeScreen from "./screens/HomeScreen";
 import SearchScreen from "./screens/SearchScreen";
+import SavedPlacesScreen from "./screens/SavedPlacesScreen";
 import ReportHazardScreen from "./screens/ReportHazardScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import AlertsScreen from "./screens/AlertsScreen";
@@ -33,7 +34,7 @@ export default function App() {
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_KEY) || "en");
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("roadsense-theme");
-    return saved || (window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light");
+    return saved || (window.matchMedia?.("(prefers-color-scheme: dark")?.matches ? "dark" : "light");
   });
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("roadsense-theme", theme); }, [theme]);
@@ -52,5 +53,5 @@ export default function App() {
   const screenProps = { onNavigate: navigate, theme, onToggleTheme: toggleTheme, onMenu: () => setMenuOpen(true), language, user };
 
   if (!user) return <div className="app-shell auth-app-shell"><AuthScreen onAuthenticated={(nextUser) => { localStorage.setItem(AUTH_KEY, JSON.stringify(nextUser)); setUser(nextUser); }} /></div>;
-  return <div className="app-shell">{screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} onNotifications={() => navigate("alerts")} />}{screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}{screen === "report" && <ReportHazardScreen {...screenProps} />}{screen === "profile" && <ProfileScreen {...screenProps} />}{screen === "alerts" && <AlertsScreen {...screenProps} />}{screen === "reports" && <ReportsScreen {...screenProps} />}{screen === "authority" && <AuthorityDashboard {...screenProps} onBack={() => navigate("home")} />}{menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={changeLanguage} />}</div>;
+  return <div className="app-shell">{screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} onNotifications={() => navigate("alerts")} />}{screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "saved" && <SavedPlacesScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}{screen === "report" && <ReportHazardScreen {...screenProps} />}{screen === "profile" && <ProfileScreen {...screenProps} />}{screen === "alerts" && <AlertsScreen {...screenProps} />}{screen === "reports" && <ReportsScreen {...screenProps} />}{screen === "authority" && <AuthorityDashboard {...screenProps} onBack={() => navigate("home")} />}{menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={changeLanguage} />}</div>;
 }
