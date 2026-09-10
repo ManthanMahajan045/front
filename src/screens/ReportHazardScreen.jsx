@@ -17,13 +17,19 @@ export default function ReportHazardScreen({ onNavigate }) {
   const galleryInputRef = useRef(null);
 
   useEffect(() => {
-    getCurrentLocation()
-      .then(async (loc) => {
+    let cancelled = false;
+    getCurrentLocation({ timeout: 8000, targetAccuracy: 50 })
+      .then((loc) => {
+        if (cancelled) return;
         setCoords(loc);
-        try { setAddress(await reverseGeocode(loc.lat, loc.lng)); }
-        catch { setAddress(`${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`); }
+        // Address is cosmetic. Do not make report submission wait for the
+        // reverse-geocoding network request.
+        reverseGeocode(loc.lat, loc.lng, 3500)
+          .then((result) => { if (!cancelled) setAddress(result); })
+          .catch(() => { if (!cancelled) setAddress(`${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`); });
       })
-      .catch(() => setAddress("Location not available — enable location access"));
+      .catch(() => { if (!cancelled) setAddress("Location not available — enable location access"); });
+    return () => { cancelled = true; };
   }, []);
 
   function handlePhotoChange(e) {
@@ -37,14 +43,22 @@ export default function ReportHazardScreen({ onNavigate }) {
 
   async function handleSubmit() {
     if (!selectedType) { setError("Please select a hazard type first."); return; }
-    if (!coords) { setError("Your location is still being detected. Please try again in a moment."); return; }
+    if (!coords) { setError("Location is still being detected. Please wait a few seconds and try again."); return; }
     setSubmitting(true); setError(null);
     try {
-      await submitHazardReport({ hazardType: selectedType, location: address, coordinates: coords, reportedBy: null, photo });
+      const result = await submitHazardReport({ hazardType: selectedType, location: address, coordinates: coords, photo });
+      if (result?.photoUploadWarning) {
+        console.info("Report saved without photo because Firebase Storage was unavailable:", result.photoUploadWarning);
+      }
       onNavigate("reports");
     } catch (err) {
       console.error("Report submit failed:", err);
-      setError("Report submit nahi hua, dobara try karo.");
+      const code = err?.code || "";
+      if (code.includes("permission-denied")) setError("Firebase permission denied. Please log in again and try submitting.");
+      else if (code.includes("unauthenticated")) setError("Your login session expired. Please log in again.");
+      else if (code.includes("failed-precondition")) setError("Firebase needs its database index/configuration updated. Try again after a moment.");
+      else if (code.includes("unavailable") || code.includes("network")) setError("Network connection issue. Check your internet and try again.");
+      else setError(err?.message || "Report submit nahi hua, dobara try karo.");
     } finally { setSubmitting(false); }
   }
 
