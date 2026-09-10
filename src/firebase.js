@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
@@ -29,6 +29,10 @@ async function ensureAuthenticated() {
   return auth.currentUser;
 }
 
+async function sendPasswordReset(email) {
+  return sendPasswordResetEmail(auth, email.trim());
+}
+
 export async function signUpWithEmail(email, password, name) {
   const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
   if (name?.trim()) await updateProfile(result.user, { displayName: name.trim() });
@@ -39,6 +43,10 @@ export async function signUpWithEmail(email, password, name) {
 export async function signInWithEmail(email, password) {
   const result = await signInWithEmailAndPassword(auth, email.trim(), password);
   return { user: result.user, profile: await getUserProfile(result.user.uid) };
+}
+
+export async function resetPasswordWithEmail(email) {
+  return sendPasswordReset(email);
 }
 
 export async function signInWithGoogle() {
