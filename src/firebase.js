@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
@@ -39,6 +39,18 @@ export async function signUpWithEmail(email, password, name) {
 export async function signInWithEmail(email, password) {
   const result = await signInWithEmailAndPassword(auth, email.trim(), password);
   return { user: result.user, profile: await getUserProfile(result.user.uid) };
+}
+
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  const result = await signInWithPopup(auth, provider);
+  const profile = await saveUserProfile(result.user, {
+    name: result.user.displayName || "RoadSense user",
+    email: result.user.email || "",
+    method: "google",
+  });
+  return { user: result.user, profile };
 }
 
 export async function saveUserProfile(firebaseUser, data = {}) {
