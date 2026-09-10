@@ -7,7 +7,7 @@ import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage"
 // This intentionally ignores stale Vercel VITE_* overrides so the deployed app
 // cannot accidentally initialize Firebase with an old/invalid API key.
 const firebaseConfig = {
-  apiKey: "AIzaSyDrvaJONaD-CK2_W1dLkUA-NtwhFBChPkU",
+  apiKey: "AIzaSyDrvaJONaD-CK2_WldLkUA-NtwhFBChPkU",
   authDomain: "road-sense-bca4e.firebaseapp.com",
   projectId: "road-sense-bca4e",
   storageBucket: "road-sense-bca4e.firebasestorage.app",
