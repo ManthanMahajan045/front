@@ -1,7 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
-import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDrvaJONaD-CK2_WldLkUA-NtwhFBChPkU",
@@ -16,8 +15,7 @@ export const USE_REAL_FIREBASE = true;
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const storage = getStorage(app);
-export { db, auth, storage };
+export { db, auth };
 
 async function ensureAuthenticated() {
   if (auth.currentUser) return auth.currentUser;
@@ -82,7 +80,7 @@ function compressPhotoForFirestore(dataUrl) {
   return new Promise((resolve) => {
     const image = new Image();
     image.onload = () => {
-      const maxSide = 720;
+      const maxSide = 640;
       const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || 1, image.naturalHeight || 1));
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
@@ -90,9 +88,9 @@ function compressPhotoForFirestore(dataUrl) {
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return resolve(null);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-      let quality = 0.62;
+      let quality = 0.55;
       let output = canvas.toDataURL("image/jpeg", quality);
-      while (output.length > 700000 && quality > 0.28) { quality -= 0.08; output = canvas.toDataURL("image/jpeg", quality); }
+      while (output.length > 550000 && quality > 0.25) { quality -= 0.07; output = canvas.toDataURL("image/jpeg", quality); }
       resolve(output);
     };
     image.onerror = () => resolve(null);
@@ -102,27 +100,24 @@ function compressPhotoForFirestore(dataUrl) {
 
 export async function submitHazardReport({ hazardType, location, coordinates, photo }) {
   const user = await ensureAuthenticated();
-  const compactPhoto = photo ? await compressPhotoForFirestore(photo) : null;
-  let photoUrl = null;
-  let photoData = null;
 
-  if (compactPhoto) {
-    try {
-      const fileRef = ref(storage, `reports/${user.uid}/${Date.now()}.jpg`);
-      await uploadString(fileRef, compactPhoto, "data_url", { contentType: "image/jpeg" });
-      photoUrl = await getDownloadURL(fileRef);
-    } catch (error) {
-      // If Storage is unavailable, keep the compact image in Firestore so the
-      // report still contains both details and a photo. The original image is
-      // never written to Firestore.
-      console.warn("Storage upload unavailable; using Firestore photo fallback.", error);
-      photoData = compactPhoto;
-    }
-  }
+  // Do not call Firebase Cloud Storage here. The current Firebase project can
+  // run on Spark, while Cloud Storage requires Blaze and otherwise returns
+  // 402/403 responses that appear in the browser as CORS/preflight failures.
+  // Firestore is the report backend, so keep a compact photo inside the report
+  // document instead. The image is resized/compressed before it is written.
+  const photoData = photo ? await compressPhotoForFirestore(photo) : null;
 
   return addDoc(collection(db, "reports"), {
-    hazardType, location, coordinates, reportedBy: user.uid,
-    photo: photoUrl, photoData, upvotes: 0, status: "pending", createdAt: serverTimestamp(),
+    hazardType,
+    location,
+    coordinates,
+    reportedBy: user.uid,
+    photo: null,
+    photoData,
+    upvotes: 0,
+    status: "pending",
+    createdAt: serverTimestamp(),
   });
 }
 
@@ -153,8 +148,6 @@ export async function getReports() {
 
 export async function getMyReports(uid) {
   if (!uid) return [];
-  // Avoid a required composite index for where(reportedBy) + orderBy(createdAt).
-  // We sort the user's small report list in memory instead.
   const snapshot = await getDocs(query(collection(db, "reports"), where("reportedBy", "==", uid)));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => {
     const aTime = a.createdAt?.toMillis?.() || 0;
