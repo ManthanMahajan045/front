@@ -1,11 +1,9 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
 // RoadSense production Firebase web app configuration from Firebase Console.
-// This intentionally ignores stale Vercel VITE_* overrides so the deployed app
-// cannot accidentally initialize Firebase with an old/invalid API key.
 const firebaseConfig = {
   apiKey: "AIzaSyDrvaJONaD-CK2_WldLkUA-NtwhFBChPkU",
   authDomain: "road-sense-bca4e.firebaseapp.com",
@@ -23,10 +21,28 @@ const storage = getStorage(app);
 export { db, auth, storage };
 
 async function ensureAuthenticated() {
-  if (!auth.currentUser) {
-    throw new Error("Your Firebase session is missing. Please log in again before submitting a report.");
-  }
-  return auth.currentUser;
+  if (auth.currentUser) return auth.currentUser;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (settled) return;
+      settled = true;
+      unsubscribe();
+      if (user) resolve(user);
+      else reject(new Error("Your Firebase session is missing. Please log in again before submitting a report."));
+    }, (error) => {
+      if (settled) return;
+      settled = true;
+      unsubscribe();
+      reject(error);
+    });
+    window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      unsubscribe();
+      reject(new Error("Firebase session is still loading. Please wait a moment and try again."));
+    }, 5000);
+  });
 }
 
 async function sendPasswordReset(email) {
@@ -84,19 +100,33 @@ export async function getUserProfile(uid) {
 export async function submitHazardReport({ hazardType, location, coordinates, photo }) {
   const user = await ensureAuthenticated();
   let photoUrl = null;
+  let photoUploadWarning = null;
+
+  // Cloud Storage currently requires the Firebase Blaze plan. Keep report
+  // submission working on Spark by treating the photo as optional: if storage
+  // is unavailable, the hazard report itself is still saved to Firestore.
   if (photo) {
-    const fileRef = ref(storage, `reports/${user.uid}/${Date.now()}.jpg`);
-    await uploadString(fileRef, photo, "data_url", { contentType: "image/jpeg" });
-    photoUrl = await getDownloadURL(fileRef);
+    try {
+      const fileRef = ref(storage, `reports/${user.uid}/${Date.now()}.jpg`);
+      await uploadString(fileRef, photo, "data_url", { contentType: "image/jpeg" });
+      photoUrl = await getDownloadURL(fileRef);
+    } catch (error) {
+      console.warn("Photo upload skipped; report will still be submitted.", error);
+      photoUploadWarning = error?.code || "photo-upload-failed";
+    }
   }
-  return addDoc(collection(db, "reports"), {
-    hazardType, location, coordinates,
+
+  const reportRef = await addDoc(collection(db, "reports"), {
+    hazardType,
+    location,
+    coordinates,
     reportedBy: user.uid,
     photo: photoUrl,
     upvotes: 0,
     status: "pending",
     createdAt: serverTimestamp(),
   });
+  return { ...reportRef, photoUploadWarning };
 }
 
 export async function upvoteReport(reportId) {
