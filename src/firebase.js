@@ -3,7 +3,6 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWith
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
-// RoadSense production Firebase web app configuration from Firebase Console.
 const firebaseConfig = {
   apiKey: "AIzaSyDrvaJONaD-CK2_WldLkUA-NtwhFBChPkU",
   authDomain: "road-sense-bca4e.firebaseapp.com",
@@ -24,30 +23,23 @@ async function ensureAuthenticated() {
   if (auth.currentUser) return auth.currentUser;
   return new Promise((resolve, reject) => {
     let settled = false;
+    let timer;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      if (timer) window.clearTimeout(timer);
+      unsubscribe?.();
+      callback(value);
+    };
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (settled) return;
-      settled = true;
-      unsubscribe();
-      if (user) resolve(user);
-      else reject(new Error("Your Firebase session is missing. Please log in again before submitting a report."));
-    }, (error) => {
-      if (settled) return;
-      settled = true;
-      unsubscribe();
-      reject(error);
-    });
-    window.setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      unsubscribe();
-      reject(new Error("Firebase session is still loading. Please wait a moment and try again."));
-    }, 5000);
+      if (user) finish(resolve, user);
+      else finish(reject, new Error("Your Firebase session is missing. Please log in again before submitting a report."));
+    }, (error) => finish(reject, error));
+    timer = window.setTimeout(() => finish(reject, new Error("Firebase session is still loading. Please wait a moment and try again.")), 5000);
   });
 }
 
-async function sendPasswordReset(email) {
-  return sendPasswordResetEmail(auth, email.trim());
-}
+async function sendPasswordReset(email) { return sendPasswordResetEmail(auth, email.trim()); }
 
 export async function signUpWithEmail(email, password, name) {
   const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
@@ -61,19 +53,13 @@ export async function signInWithEmail(email, password) {
   return { user: result.user, profile: await getUserProfile(result.user.uid) };
 }
 
-export async function resetPasswordWithEmail(email) {
-  return sendPasswordReset(email);
-}
+export async function resetPasswordWithEmail(email) { return sendPasswordReset(email); }
 
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   const result = await signInWithPopup(auth, provider);
-  const profile = await saveUserProfile(result.user, {
-    name: result.user.displayName || "RoadSense user",
-    email: result.user.email || "",
-    method: "google",
-  });
+  const profile = await saveUserProfile(result.user, { name: result.user.displayName || "RoadSense user", email: result.user.email || "", method: "google" });
   return { user: result.user, profile };
 }
 
@@ -97,36 +83,64 @@ export async function getUserProfile(uid) {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
+function compressPhotoForFirestore(dataUrl) {
+  if (!dataUrl || typeof window === "undefined") return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const maxSide = 720;
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || 1, image.naturalHeight || 1));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
+      canvas.height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) return resolve(dataUrl);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      let quality = 0.62;
+      let output = canvas.toDataURL("image/jpeg", quality);
+      // Keep the Firestore fallback comfortably below the 1 MiB document limit.
+      while (output.length > 700000 && quality > 0.28) {
+        quality -= 0.08;
+        output = canvas.toDataURL("image/jpeg", quality);
+      }
+      resolve(output);
+    };
+    image.onerror = () => resolve(null);
+    image.src = dataUrl;
+  });
+}
+
 export async function submitHazardReport({ hazardType, location, coordinates, photo }) {
   const user = await ensureAuthenticated();
+  const compactPhoto = photo ? await compressPhotoForFirestore(photo) : null;
   let photoUrl = null;
+  let photoData = null;
   let photoUploadWarning = null;
 
-  // Cloud Storage currently requires the Firebase Blaze plan. Keep report
-  // submission working on Spark by treating the photo as optional: if storage
-  // is unavailable, the hazard report itself is still saved to Firestore.
-  if (photo) {
+  if (compactPhoto) {
     try {
       const fileRef = ref(storage, `reports/${user.uid}/${Date.now()}.jpg`);
-      await uploadString(fileRef, photo, "data_url", { contentType: "image/jpeg" });
+      await uploadString(fileRef, compactPhoto, "data_url", { contentType: "image/jpeg" });
       photoUrl = await getDownloadURL(fileRef);
     } catch (error) {
-      console.warn("Photo upload skipped; report will still be submitted.", error);
-      photoUploadWarning = error?.code || "photo-upload-failed";
+      // Storage can be unavailable on the Firebase Spark plan. Preserve the
+      // compressed photo inside the report so details + photo still reach Firestore.
+      photoData = compactPhoto;
+      photoUploadWarning = error?.code || "photo-storage-unavailable";
     }
   }
 
-  const reportRef = await addDoc(collection(db, "reports"), {
+  return addDoc(collection(db, "reports"), {
     hazardType,
     location,
     coordinates,
     reportedBy: user.uid,
     photo: photoUrl,
+    photoData,
     upvotes: 0,
     status: "pending",
     createdAt: serverTimestamp(),
   });
-  return { ...reportRef, photoUploadWarning };
 }
 
 export async function upvoteReport(reportId) {
