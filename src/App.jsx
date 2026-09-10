@@ -20,8 +20,6 @@ const LANGUAGE_KEY = "roadsense-language";
 function readStoredUser() {
   try {
     const stored = JSON.parse(localStorage.getItem(AUTH_KEY));
-    // Old RoadSense builds stored demo-only sessions. Do not let those sessions
-    // bypass Firebase Authentication and then fail when writing Firestore data.
     if (!stored?.firebaseUid) { localStorage.removeItem(AUTH_KEY); return null; }
     return stored;
   } catch { localStorage.removeItem(AUTH_KEY); return null; }
@@ -33,10 +31,18 @@ export default function App() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_KEY) || "en");
-  const [theme, setTheme] = useState(() => { const saved = localStorage.getItem("roadsense-theme"); return saved || (window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light"); });
+  const [theme, setTheme] = useState(() => { const saved = localStorage.getItem("roadsense-theme"); return saved || (window.matchMedia?.("(prefers-color-scheme: dark")?.matches ? "dark" : "light"); });
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("roadsense-theme", theme); }, [theme]);
-  useEffect(() => { localStorage.setItem(LANGUAGE_KEY, language); document.documentElement.lang = language === "hi" ? "hi" : "en"; if (language === "hi") { translatePage("hi"); const observer = new MutationObserver(() => translatePage("hi")); observer.observe(document.body, { childList: true, subtree: true, characterData: true }); return () => observer.disconnect(); } }, [language]);
+  useEffect(() => {
+    localStorage.setItem(LANGUAGE_KEY, language);
+    document.documentElement.lang = language === "hi" ? "hi" : "en";
+    if (language === "hi") {
+      const frame = window.requestAnimationFrame(() => translatePage("hi"));
+      return () => window.cancelAnimationFrame(frame);
+    }
+    return undefined;
+  }, [language, screen, menuOpen]);
   const changeLanguage = (nextLanguage) => { setLanguage(nextLanguage); if (nextLanguage === "en") window.setTimeout(() => window.location.reload(), 0); };
   const toggleTheme = () => setTheme((current) => current === "dark" ? "light" : "dark");
   const navigate = (next) => { setScreen(next); setMenuOpen(false); };
