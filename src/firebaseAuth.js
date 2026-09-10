@@ -4,7 +4,7 @@ import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth
 // RoadSense production Firebase web app configuration.
 // These values come directly from Firebase Project Settings for road-sense-bca4e.
 const firebaseConfig = {
-  apiKey: "AIzaSyDrvaJONaD-CK2_W1dLkUA-NtwhFBChPkU",
+  apiKey: "AIzaSyDrvaJONaD-CK2_WldLUA-NtwhFBChPkU",
   authDomain: "road-sense-bca4e.firebaseapp.com",
   projectId: "road-sense-bca4e",
   storageBucket: "road-sense-bca4e.firebasestorage.app",
