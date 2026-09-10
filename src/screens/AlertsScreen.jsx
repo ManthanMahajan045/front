@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Bell, LocateFixed, Play, Volume2, CheckCircle2, AlertTriangle, Droplets, Construction, CarFront } from "lucide-react";
+import { Bell, LocateFixed, Play, Volume2, CheckCircle2, AlertTriangle, Droplets, Construction, CarFront, Gauge } from "lucide-react";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import "./AlertsScreen.css";
@@ -10,6 +10,16 @@ import { distanceKm, getCurrentLocation } from "../utils/geo";
 const ALERT_RADIUS_KM = 5;
 const NOTIFIED_KEY = "roadsense_notified_alerts";
 const ALERT_TONE_KEY = "roadsense_alert_tone";
+const ALERT_VOLUME_KEY = "roadsense_alert_volume";
+const SMART_BOOST_KEY = "roadsense_smart_boost";
+
+const ALERT_VOLUMES = [
+  { id: 1, label: "Whisper", hint: "Gentle", value: 0.06 },
+  { id: 2, label: "Soft", hint: "Low", value: 0.10 },
+  { id: 3, label: "Clear", hint: "Balanced", value: 0.16 },
+  { id: 4, label: "Strong", hint: "Traffic", value: 0.22 },
+  { id: 5, label: "Maximum", hint: "Helmet", value: 0.29 },
+];
 
 const SAMPLE_ALERTS = [
   { id: "sample-pothole", title: "Pothole Ahead", message: "A road hazard may be ahead on your route.", severity: "High", Icon: AlertTriangle },
@@ -36,8 +46,13 @@ function browserNotify(alert) {
   notification.onclick = () => { window.focus(); notification.close(); };
 }
 
-function playTone(toneId) {
+function playTone(toneId, severity = "", overrideVolumeLevel = null) {
   const tone = ALERT_TONES.find((item) => item.id === toneId) || ALERT_TONES[0];
+  const storedLevel = overrideVolumeLevel ?? Number(localStorage.getItem(ALERT_VOLUME_KEY) || 3);
+  const selectedVolume = ALERT_VOLUMES.find((item) => item.id === storedLevel) || ALERT_VOLUMES[2];
+  const smartBoost = localStorage.getItem(SMART_BOOST_KEY) !== "false";
+  const priorityBoost = smartBoost && /high|critical/i.test(severity) ? 1.18 : 1;
+  const gainTarget = Math.min(0.32, selectedVolume.value * priorityBoost);
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return;
   const context = new AudioContextClass();
@@ -49,7 +64,7 @@ function playTone(toneId) {
     oscillator.type = index % 2 === 0 ? "sine" : "triangle";
     oscillator.frequency.setValueAtTime(frequency, start);
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.16, start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(gainTarget, start + 0.025);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.14);
     oscillator.connect(gain);
     gain.connect(context.destination);
@@ -66,6 +81,11 @@ export default function AlertsScreen({ onNavigate }) {
   const [history, setHistory] = useState([]);
   const [notificationStatus, setNotificationStatus] = useState("default");
   const [tone, setTone] = useState(() => localStorage.getItem(ALERT_TONE_KEY) || "soft-chime");
+  const [volumeLevel, setVolumeLevel] = useState(() => {
+    const stored = Number(localStorage.getItem(ALERT_VOLUME_KEY) || 3);
+    return ALERT_VOLUMES.some((item) => item.id === stored) ? stored : 3;
+  });
+  const [smartBoost, setSmartBoost] = useState(() => localStorage.getItem(SMART_BOOST_KEY) !== "false");
   const [showSamples, setShowSamples] = useState(false);
 
   const requestNotifications = async () => {
@@ -87,7 +107,7 @@ export default function AlertsScreen({ onNavigate }) {
       setHistory(allHazards.filter((h) => !nearby.some((n) => n.id === h.id)));
       const alreadyNotified = JSON.parse(localStorage.getItem(NOTIFIED_KEY) || "[]");
       const fresh = nearby.filter((h) => !alreadyNotified.includes(h.id));
-      fresh.slice(0, 3).forEach((alert) => { browserNotify(alert); playTone(tone); });
+      fresh.slice(0, 3).forEach((alert) => { browserNotify(alert); playTone(tone, alert.severity); });
       localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...new Set([...alreadyNotified, ...fresh.map((h) => h.id)])].slice(-100)));
     } catch { setLocationStatus("denied"); }
   }
@@ -98,9 +118,12 @@ export default function AlertsScreen({ onNavigate }) {
   }, []);
 
   useEffect(() => { localStorage.setItem(ALERT_TONE_KEY, tone); }, [tone]);
+  useEffect(() => { localStorage.setItem(ALERT_VOLUME_KEY, String(volumeLevel)); }, [volumeLevel]);
+  useEffect(() => { localStorage.setItem(SMART_BOOST_KEY, String(smartBoost)); }, [smartBoost]);
 
   const listToShow = useMemo(() => tab === "active" ? activeAlerts : history, [tab, activeAlerts, history]);
   const selectedTone = ALERT_TONES.find((item) => item.id === tone) || ALERT_TONES[0];
+  const selectedVolume = ALERT_VOLUMES.find((item) => item.id === volumeLevel) || ALERT_VOLUMES[2];
 
   return (
     <div className="screen">
@@ -110,6 +133,25 @@ export default function AlertsScreen({ onNavigate }) {
         <button className="notify-btn" onClick={requestNotifications} disabled={notificationStatus === "granted"}>{notificationStatus === "granted" ? "Enabled" : "Enable"}</button>
       </div>
       <section className="alert-preferences-panel">
+        <div className="alert-panel-heading"><div><span className="alert-panel-kicker">Make it yours</span><h2>Alert intensity</h2></div><Gauge size={20} /></div>
+        <p>Set how noticeable the RoadSense beep feels. Lower it for a calmer drive, or raise it if road noise or a helmet makes alerts hard to hear.</p>
+        <div className="volume-levels" role="group" aria-label="Alert intensity level">
+          {ALERT_VOLUMES.map((item) => (
+            <button key={item.id} className={`volume-level ${volumeLevel === item.id ? "selected" : ""}`} onClick={() => { setVolumeLevel(item.id); playTone(tone, "", item.id); }} aria-label={`Set alert intensity to ${item.label}`} aria-pressed={volumeLevel === item.id}>
+              <span className="volume-bars" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+              <strong>{item.id}</strong>
+              <small>{item.label}</small>
+            </button>
+          ))}
+        </div>
+        <div className="volume-status"><div><Volume2 size={15} /><span>Level {selectedVolume.id} · <strong>{selectedVolume.label}</strong><small>{selectedVolume.hint}</small></span></div><button onClick={() => playTone(tone)}><Play size={13} /> Preview</button></div>
+        <button className={`smart-boost ${smartBoost ? "enabled" : ""}`} onClick={() => setSmartBoost((value) => !value)} aria-pressed={smartBoost}>
+          <span className="smart-boost-check">{smartBoost ? <CheckCircle2 size={17} /> : <span />}</span>
+          <span><strong>Smart Boost</strong><small>Give High-priority hazards a subtle extra bump so they stand out in busy traffic.</small></span>
+        </button>
+        <div className="volume-note">This controls the RoadSense alert beep — your phone's master volume stays unchanged.</div>
+      </section>
+      <section className="alert-preferences-panel tone-panel">
         <div className="alert-panel-heading"><div><span className="alert-panel-kicker">Make it yours</span><h2>Choose your alert sound</h2></div><Volume2 size={20} /></div>
         <p>Pick a tone you will recognize quickly while driving. You can change it anytime.</p>
         <div className="tone-list">{ALERT_TONES.map((item) => <button key={item.id} className={`tone-option ${tone === item.id ? "selected" : ""}`} onClick={() => { setTone(item.id); playTone(item.id); }}><span className="tone-check">{tone === item.id ? <CheckCircle2 size={18} /> : <span />}</span><span className="tone-copy"><strong>{item.name}</strong><small>{item.description}</small></span><Play size={15} /></button>)}</div>
@@ -117,7 +159,7 @@ export default function AlertsScreen({ onNavigate }) {
       </section>
       <section className="sample-alert-panel">
         <button className="sample-alert-toggle" onClick={() => setShowSamples((value) => !value)}><div><span className="alert-panel-kicker">Try it before you drive</span><strong>Sample alerts</strong><small>See exactly what a RoadSense warning can look and sound like</small></div><span>{showSamples ? "Hide" : "Preview"}</span></button>
-        {showSamples && <div className="sample-alert-list">{SAMPLE_ALERTS.map((sample) => { const Icon = sample.Icon; return <div className="sample-alert" key={sample.id}><div className="sample-alert-icon"><Icon size={18} /></div><div className="sample-alert-copy"><strong>{sample.title}</strong><span>{sample.message}</span><small>{sample.severity} priority · Example warning</small></div><button aria-label={`Test ${sample.title} alert`} onClick={() => playTone(tone)}><Play size={15} /></button></div>; })}</div>}
+        {showSamples && <div className="sample-alert-list">{SAMPLE_ALERTS.map((sample) => { const Icon = sample.Icon; return <div className="sample-alert" key={sample.id}><div className="sample-alert-icon"><Icon size={18} /></div><div className="sample-alert-copy"><strong>{sample.title}</strong><span>{sample.message}</span><small>{sample.severity} priority · Example warning</small></div><button aria-label={`Test ${sample.title} alert`} onClick={() => playTone(tone, sample.severity)}><Play size={15} /></button></div>; })}</div>}
       </section>
       <div className="tabs"><button className={`tab ${tab === "active" ? "active" : ""}`} onClick={() => setTab("active")}>Active {activeAlerts.length > 0 && <span className="tab-count">{activeAlerts.length}</span>}</button><button className={`tab ${tab === "history" ? "active" : ""}`} onClick={() => setTab("history")}>History</button></div>
       {locationStatus === "loading" && <p className="empty-state">Checking your location…</p>}
