@@ -1,0 +1,44 @@
+/* Auth switch: keep the account prompt and action readable, centered, and on one clean line when space allows. */
+.auth-screen .auth-switch {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 20px auto 0;
+  padding: 0 8px;
+  text-align: center;
+  color: var(--text) !important;
+  opacity: 1 !important;
+  line-height: 1.5;
+  white-space: normal;
+  overflow: visible;
+}
+
+.auth-screen .auth-switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  color: #6d28d9 !important;
+  -webkit-text-fill-color: #6d28d9 !important;
+  font-weight: 700;
+  line-height: inherit;
+  white-space: nowrap;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.auth-screen .auth-switch button:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 360px) {
+  .auth-screen .auth-switch {
+    gap: 2px;
+    padding: 0 4px;
+  }
+}
