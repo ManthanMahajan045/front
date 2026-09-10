@@ -1,20 +1,11 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "./firebase";
 
-// RoadSense production Firebase web app configuration from Firebase Console.
-const firebaseConfig = {
-  apiKey: "AIzaSyDrvaJONaD-CK2_WldLkUA-NtwhFBChPkU",
-  authDomain: "road-sense-bca4e.firebaseapp.com",
-  projectId: "road-sense-bca4e",
-  storageBucket: "road-sense-bca4e.firebasestorage.app",
-  messagingSenderId: "1032531366359",
-  appId: "1:1032531366359:web:4855fc7461fbb3d4c13b92",
-};
-
+// Reuse the single Firebase app/auth instance used by the rest of RoadSense.
+// This prevents phone auth from initializing a second Firebase app with a
+// different/stale configuration.
 export const isFirebaseAuthConfigured = true;
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
 let recaptchaVerifier = null;
 
 export const sendPhoneOtp = async (phoneNumber) => {
