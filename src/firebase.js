@@ -4,9 +4,9 @@ import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, 
 
 const firebaseConfig = {
   apiKey: "AIzaSyDrvaJONaD-CK2_WldLkUA-NtwhFBChPkU",
-  authDomain: "road-sense-bca4e.firebaseapp.com",
-  projectId: "road-sense-bca4e",
-  storageBucket: "road-sense-bca4e.firebasestorage.app",
+  authDomain: "road-sense-bca4.firebaseapp.com",
+  projectId: "road-sense-bca4",
+  storageBucket: "road-sense-bca4.firebasestorage.app",
   messagingSenderId: "1032531366359",
   appId: "1:1032531366359:web:4855fc7461fbb3d4c13b92",
 };
@@ -117,6 +117,23 @@ export async function submitHazardReport({ hazardType, location, coordinates, ph
     photoData,
     upvotes: 0,
     status: "pending",
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function submitFeedback({ message, category = "General", rating = null }) {
+  const user = await ensureAuthenticated();
+  const cleanMessage = String(message || "").trim();
+  if (cleanMessage.length < 5) throw new Error("Please enter at least 5 characters of feedback.");
+  if (cleanMessage.length > 2000) throw new Error("Feedback must be 2000 characters or less.");
+
+  return addDoc(collection(db, "feedback"), {
+    message: cleanMessage,
+    category: String(category || "General").trim() || "General",
+    rating: Number.isFinite(rating) ? rating : null,
+    submittedBy: user.uid,
+    email: user.email || "",
+    phone: user.phoneNumber || "",
     createdAt: serverTimestamp(),
   });
 }
