@@ -9,7 +9,7 @@ import { getLocalReports } from "../firebase";
 import { getCurrentLocation, distanceKm } from "../utils/geo";
 
 const DEFAULT_CENTER = { lat: 26.9124, lng: 75.7873 };
-const LOCATION_INTERVAL = 5000;
+const LOCATION_INTERVAL = 15000;
 const MOVE_THRESHOLD_KM = 0.003;
 const HAZARD_ALERT_RADIUS_M = 50;
 const HAZARD_CLOSE_RADIUS_M = 20;
@@ -92,7 +92,7 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
       if (cancelled || requestInFlightRef.current || document.hidden) return;
       requestInFlightRef.current = true;
       try {
-        const next = await getCurrentLocation({ timeout: 15000, targetAccuracy: 10 });
+        const next = await getCurrentLocation({ timeout: 8000, targetAccuracy: 50 });
         const previous = lastLocationRef.current;
         if (!previous || next.accuracy < previous.accuracy || distanceKm(previous.lat, previous.lng, next.lat, next.lng) >= MOVE_THRESHOLD_KM) {
           lastLocationRef.current = next;
@@ -117,7 +117,7 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
 
   const locateNow = async () => {
     setLocating(true);
-    try { const next = await getCurrentLocation({ timeout: 20000, targetAccuracy: 8 }); lastLocationRef.current = next; setUserLocation(next); setLocationError(false); checkSafetyRadius(next); }
+    try { const next = await getCurrentLocation({ timeout: 10000, targetAccuracy: 30 }); lastLocationRef.current = next; setUserLocation(next); setLocationError(false); checkSafetyRadius(next); }
     catch { setLocationError(true); } finally { setLocating(false); }
   };
 
