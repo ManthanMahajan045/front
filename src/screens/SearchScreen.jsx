@@ -2,7 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { MapPin, Loader2 } from "lucide-react";
 import TopBar from "../components/TopBar";
 import { searchableLocations } from "../sampleData";
-async function fetchLiveSuggestions(query, signal) { const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=in&q=${encodeURIComponent(query)}`; const res = await fetch(url, { signal }); if (!res.ok) throw new Error("Geocoding request failed"); const data = await res.json(); return data.map((item) => ({ id: item.place_id, name: item.display_name.split(",")[0], address: item.display_name, coordinates: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) } })); }
+
+export async function fetchLiveSuggestions(query, signal) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=in&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error("Geocoding request failed");
+  const data = await res.json();
+  return data.map((item) => ({ id: item.place_id, name: item.display_name.split(",")[0], address: item.display_name, coordinates: { lat: parseFloat(item.lat), lng: parseFloat(item.lon) } }));
+}
+
 export default function SearchScreen({ onNavigate, onSelectLocation }) {
   const [query, setQuery] = useState(""); const [liveResults, setLiveResults] = useState(null); const [loading, setLoading] = useState(false); const [error, setError] = useState(null); const abortRef = useRef(null); const debounceRef = useRef(null);
   useEffect(() => { if (!query.trim() || query.trim().length < 3) { setLiveResults(null); setLoading(false); return; } setLoading(true); setError(null); clearTimeout(debounceRef.current); debounceRef.current = setTimeout(async () => { abortRef.current?.abort(); const controller = new AbortController(); abortRef.current = controller; try { setLiveResults(await fetchLiveSuggestions(query, controller.signal)); } catch (err) { if (err.name !== "AbortError") { console.error("Search failed:", err); setError("Search abhi kaam nahi kar raha, thodi der baad try karo."); } } finally { setLoading(false); } }, 500); return () => clearTimeout(debounceRef.current); }, [query]);
