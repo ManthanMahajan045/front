@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Bell, ChevronRight, Globe2, HelpCircle, FileText, Home, LogOut, ShieldCheck, LayoutDashboard, X, Bookmark, BookOpen, Info, MessageSquare, LockKeyhole, Route, AlertTriangle } from "lucide-react";
+import { submitFeedback } from "../firebase";
 
 const ITEMS = [
   { key: "home", label: "Home", icon: Home, navigate: "home", hint: "Your road safety overview" },
@@ -17,52 +18,56 @@ const ITEMS = [
 ];
 
 const MODAL_CONTENT = {
-  saved: {
-    title: "Saved Places",
-    body: "Save places you visit often so navigation can feel faster and more personal. You can use labels such as Home, Work, College or Favourite. Saved places can later become quick destinations from the home screen.",
-    bullets: ["Home and work shortcuts", "Favourite destinations", "Faster route planning", "Hazard-aware navigation to saved places"],
-  },
-  trusted: {
-    title: "Trusted Contacts & Emergency Sharing",
-    body: "RoadSense is designed to make difficult moments easier. Trusted contacts can be used for future emergency-sharing features such as sending your current location or a safety status when you need help.",
-    bullets: ["Add people you trust", "Share your current location when needed", "Keep emergency sharing under your control", "No automatic sharing without your action"],
-  },
-  safety: {
-    title: "Road Safety Guide",
-    body: "RoadSense is more than a map. The safest response to a warning is usually to slow down, increase following distance and stay focused on the road. Never interact with the app while the vehicle is moving unless it can be done safely.",
-    bullets: ["Slow down near potholes, waterlogging and road work", "Keep extra distance after an accident warning", "Use alerts as guidance, not as a substitute for road signs", "If conditions are dangerous, choose a safer route or stop safely"],
-  },
-  how: {
-    title: "How RoadSense Works",
-    body: "RoadSense combines your location, road information and community reports to help you understand what may be ahead. When you report a hazard, the app records its type, location and optional photo. Reports can be reviewed and community activity can help identify useful verified information.",
-    bullets: ["1. Detect — understand where you are", "2. Discover — find nearby hazards and road conditions", "3. Warn — show a clear alert when something may affect your journey", "4. Report — let drivers contribute new hazards", "5. Verify — community and authority workflows improve confidence", "6. Navigate — choose routes with safety information in mind"],
-  },
-  privacy: {
-    title: "Privacy & Permissions",
-    body: "RoadSense asks for permissions only when a feature needs them. Location is used for nearby hazard checks and location-aware navigation. Notifications are used for safety warnings when you enable them. Photos are optional when reporting a hazard.",
-    bullets: ["Location — used for positioning and nearby alerts", "Camera — used only when you choose to capture a hazard", "Photos — optional evidence attached to your report", "Notifications — optional safety alerts", "You can manage browser permissions from your device or browser settings"],
-  },
-  about: {
-    title: "About RoadSense",
-    body: "RoadSense is a community-focused road safety experience built around one simple idea: give people better information before a road hazard becomes a surprise. The app connects reporting, alerts, safer route planning and authority workflows in one place.",
-    bullets: ["Community hazard reporting", "Nearby road safety alerts", "Hazard-aware route planning", "Photo-based reports", "Authority incident workflows", "Personal alert sound preferences", "Designed for safer, more informed journeys"],
-  },
-  feedback: {
-    title: "Send Feedback",
-    body: "Your feedback helps shape RoadSense. Tell us what felt confusing, which alert was useful, what should be faster, or what feature you would like next.",
-    bullets: ["What worked well?", "What felt difficult?", "Did an alert make sense?", "Which road-safety feature should we improve next?"],
-  },
+  saved: { title: "Saved Places", body: "Save places you visit often so navigation can feel faster and more personal. You can use labels such as Home, Work, College or Favourite. Saved places can later become quick destinations from the home screen.", bullets: ["Home and work shortcuts", "Favourite destinations", "Faster route planning", "Hazard-aware navigation to saved places"] },
+  trusted: { title: "Trusted Contacts & Emergency Sharing", body: "RoadSense is designed to make difficult moments easier. Trusted contacts can be used for future emergency-sharing features such as sending your current location or a safety status when you need help.", bullets: ["Add people you trust", "Share your current location when needed", "Keep emergency sharing under your control", "No automatic sharing without your action"] },
+  safety: { title: "Road Safety Guide", body: "RoadSense is more than a map. The safest response to a warning is usually to slow down, increase following distance and stay focused on the road. Never interact with the app while the vehicle is moving unless it can be done safely.", bullets: ["Slow down near potholes, waterlogging and road work", "Keep extra distance after an accident warning", "Use alerts as guidance, not as a substitute for road signs", "If conditions are dangerous, choose a safer route or stop safely"] },
+  how: { title: "How RoadSense Works", body: "RoadSense combines your location, road information and community reports to help you understand what may be ahead. When you report a hazard, the app records its type, location and optional photo. Reports can be reviewed and community activity can help identify useful verified information.", bullets: ["1. Detect — understand where you are", "2. Discover — find nearby hazards and road conditions", "3. Warn — show a clear alert when something may affect your journey", "4. Report — let drivers contribute new hazards", "5. Verify — community and authority workflows improve confidence", "6. Navigate — choose routes with safety information in mind"] },
+  privacy: { title: "Privacy & Permissions", body: "RoadSense asks for permissions only when a feature needs them. Location is used for nearby hazard checks and location-aware navigation. Notifications are used for safety warnings when you enable them. Photos are optional when reporting a hazard.", bullets: ["Location — used for positioning and nearby alerts", "Camera — used only when you choose to capture a hazard", "Photos — optional evidence attached to your report", "Notifications — optional safety alerts", "You can manage browser permissions from your device or browser settings"] },
+  about: { title: "About RoadSense", body: "RoadSense is a community-focused road safety experience built around one simple idea: give people better information before a road hazard becomes a surprise. The app connects reporting, alerts, safer route planning and authority workflows in one place.", bullets: ["Community hazard reporting", "Nearby road safety alerts", "Hazard-aware route planning", "Photo-based reports", "Authority incident workflows", "Personal alert sound preferences", "Designed for safer, more informed journeys"] },
 };
 
 export default function SideMenu({ onClose, onNavigate, language = "en", onLanguageChange }) {
   const [modal, setModal] = useState(null);
-  const handleItem = (item) => { if (item.navigate) { onClose(); onNavigate(item.navigate); } else setModal(item.key); };
+  const [feedback, setFeedback] = useState({ category: "General", rating: 0, message: "" });
+  const [feedbackState, setFeedbackState] = useState("idle");
+  const [feedbackError, setFeedbackError] = useState("");
+
+  const handleItem = (item) => {
+    if (item.navigate) { onClose(); onNavigate(item.navigate); }
+    else {
+      setFeedbackState("idle");
+      setFeedbackError("");
+      setModal(item.key);
+    }
+  };
   const handleLogout = () => {
     localStorage.removeItem("roadsense-auth");
     sessionStorage.removeItem("roadsense-auth");
     setModal(null);
     onClose();
     window.location.reload();
+  };
+  const handleFeedbackSubmit = async (event) => {
+    event.preventDefault();
+    if (feedback.message.trim().length < 5) {
+      setFeedbackError("Please write at least 5 characters so we can understand your feedback.");
+      return;
+    }
+    setFeedbackState("sending");
+    setFeedbackError("");
+    try {
+      await submitFeedback(feedback);
+      setFeedbackState("success");
+    } catch (error) {
+      console.error("Feedback submission failed:", error);
+      setFeedbackState("error");
+      setFeedbackError(error?.message || "We could not send your feedback. Please try again.");
+    }
+  };
+  const closeFeedback = () => {
+    setModal(null);
+    setFeedbackState("idle");
+    setFeedbackError("");
   };
 
   return (
@@ -80,6 +85,20 @@ export default function SideMenu({ onClose, onNavigate, language = "en", onLangu
           .side-menu .info-list li::first-letter{color:#6d28d9}
           .side-menu .menu-modal-kicker{font-size:10px;color:#7c3aed;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
           .side-menu .menu-modal p{font-size:12px;line-height:1.55}
+          .side-menu .feedback-form{display:grid;gap:11px;margin-top:14px}
+          .side-menu .feedback-form label{display:grid;gap:5px;font-size:10px;font-weight:800;color:var(--text)}
+          .side-menu .feedback-form select,.side-menu .feedback-form textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--text);font:inherit;font-size:12px;outline:none}
+          .side-menu .feedback-form select{height:38px;padding:0 10px}
+          .side-menu .feedback-form textarea{min-height:105px;padding:10px;resize:vertical;line-height:1.45}
+          .side-menu .feedback-form select:focus,.side-menu .feedback-form textarea:focus{border-color:#8b5cf6;box-shadow:0 0 0 2px rgba(139,92,246,.14)}
+          .side-menu .feedback-rating{display:flex;gap:5px}
+          .side-menu .feedback-rating button{width:31px;height:31px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--muted);cursor:pointer;font-size:15px}
+          .side-menu .feedback-rating button.active{color:#7c3aed;border-color:#8b5cf6;background:rgba(139,92,246,.12)}
+          .side-menu .feedback-error{margin:0!important;color:#dc2626!important;font-size:10px!important}
+          .side-menu .feedback-success{text-align:center;padding:15px 4px 4px}
+          .side-menu .feedback-success .success-icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;margin:0 auto 10px;background:rgba(34,197,94,.13);color:#16a34a;font-size:23px;font-weight:800}
+          .side-menu .feedback-success h3{margin-bottom:5px}
+          .side-menu .feedback-success p{margin-bottom:14px}
         `}</style>
         <div className="side-menu-head">
           <button className="side-menu-brand" onClick={() => { onClose(); onNavigate("home"); }} aria-label="Go to RoadSense home">
@@ -99,10 +118,10 @@ export default function SideMenu({ onClose, onNavigate, language = "en", onLangu
 
         <div className="side-menu-footer">RoadSense · See the road ahead, travel safer<br />Built to help communities notice hazards earlier and make safer journeys.</div>
 
-        {modal && <div className="menu-modal-backdrop" onClick={() => setModal(null)}>
+        {modal && <div className="menu-modal-backdrop" onClick={() => modal === "feedback" ? closeFeedback() : setModal(null)}>
           <div className="menu-modal" onClick={(event) => event.stopPropagation()}>
-            <button className="menu-modal-close" onClick={() => setModal(null)} aria-label="Close"><X size={18} /></button>
-            {modal === "language" ? <><div className="menu-modal-kicker">Personalise RoadSense</div><h3>Language</h3><p>Choose how RoadSense labels and guidance should appear.</p><button className="language-choice" onClick={() => { onLanguageChange?.("en"); setModal(null); }}>{language === "en" ? "✓ " : ""}English</button><button className="language-choice" onClick={() => { onLanguageChange?.("hi"); setModal(null); }}>{language === "hi" ? "✓ " : ""}Hindi</button></> : modal === "logout" ? <><h3>Logout</h3><p>Are you sure you want to log out of RoadSense?</p><div className="modal-actions"><button onClick={() => setModal(null)}>Cancel</button><button className="confirm-danger" onClick={handleLogout}>Logout</button></div></> : <><div className="menu-modal-kicker"><Route size={12} /> RoadSense guide</div><h3>{MODAL_CONTENT[modal]?.title}</h3><p>{MODAL_CONTENT[modal]?.body}</p><ul className="info-list">{MODAL_CONTENT[modal]?.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul><button className="modal-primary" onClick={() => setModal(null)}>Got it</button></>}
+            <button className="menu-modal-close" onClick={() => modal === "feedback" ? closeFeedback() : setModal(null)} aria-label="Close"><X size={18} /></button>
+            {modal === "language" ? <><div className="menu-modal-kicker">Personalise RoadSense</div><h3>Language</h3><p>Choose how RoadSense labels and guidance should appear.</p><button className="language-choice" onClick={() => { onLanguageChange?.("en"); setModal(null); }}>{language === "en" ? "✓ " : ""}English</button><button className="language-choice" onClick={() => { onLanguageChange?.("hi"); setModal(null); }}>{language === "hi" ? "✓ " : ""}Hindi</button></> : modal === "logout" ? <><h3>Logout</h3><p>Are you sure you want to log out of RoadSense?</p><div className="modal-actions"><button onClick={() => setModal(null)}>Cancel</button><button className="confirm-danger" onClick={handleLogout}>Logout</button></div></> : modal === "feedback" ? <><div className="menu-modal-kicker"><MessageSquare size={12} /> RoadSense feedback</div>{feedbackState === "success" ? <div className="feedback-success"><div className="success-icon">✓</div><h3>Feedback sent!</h3><p>Thank you for helping us improve RoadSense. Your feedback was submitted successfully.</p><button className="modal-primary" onClick={closeFeedback}>Done</button></div> : <><h3>Send Feedback</h3><p>Tell us what worked, what was difficult, or what you would like us to improve.</p><form className="feedback-form" onSubmit={handleFeedbackSubmit}><label>Feedback type<select value={feedback.category} onChange={(event) => setFeedback((current) => ({ ...current, category: event.target.value }))}><option>General</option><option>Bug / Problem</option><option>Map & Navigation</option><option>Alerts</option><option>Report a Hazard</option><option>Login / Account</option><option>Suggestion</option></select></label><label>How would you rate RoadSense? <span className="feedback-rating">{[1,2,3,4,5].map((value) => <button type="button" key={value} className={value <= feedback.rating ? "active" : ""} onClick={() => setFeedback((current) => ({ ...current, rating: value }))} aria-label={`${value} out of 5`}>★</button>)}</span></label><label>Your feedback<textarea value={feedback.message} maxLength={2000} onChange={(event) => setFeedback((current) => ({ ...current, message: event.target.value }))} placeholder="Write your feedback here..." /></label>{feedbackError && <p className="feedback-error">{feedbackError}</p>}<button className="modal-primary" type="submit" disabled={feedbackState === "sending"}>{feedbackState === "sending" ? "Sending…" : "Send Feedback"}</button></form></>}</> : <><div className="menu-modal-kicker"><Route size={12} /> RoadSense guide</div><h3>{MODAL_CONTENT[modal]?.title}</h3><p>{MODAL_CONTENT[modal]?.body}</p><ul className="info-list">{MODAL_CONTENT[modal]?.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul><button className="modal-primary" onClick={() => setModal(null)}>Got it</button></>}
           </div>
         </div>}
       </aside>
