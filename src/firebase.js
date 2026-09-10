@@ -13,15 +13,15 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
-// Frontend and backend use the same Firebase project. Keep the public web
-// config in Vercel/local environment variables instead of source control.
+// RoadSense production Firebase web app configuration.
+// Environment variables can override these values for local/staging use.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDrvaJONaD-CK2_W1dLkUA-NtwhFBChPkU",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "road-sense-bca4e.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "road-sense-bca4e",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "road-sense-bca4e.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1032531366359",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1032531366359:web:4855fc7461fbb3d4c13b92",
 };
 
 const requiredConfig = [
