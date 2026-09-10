@@ -12,18 +12,25 @@ export function distanceKm(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
-export async function reverseGeocode(lat, lng) {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Reverse geocoding failed");
-  const data = await res.json();
-  return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+export async function reverseGeocode(lat, lng, timeout = 4000) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeout);
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18`;
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error("Reverse geocoding failed");
+    const data = await res.json();
+    return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
-// High-accuracy browser GPS. Instead of accepting the first fix, keep the
-// GPS sensor open briefly and return the most accurate fresh fix received.
-// This avoids many of the 100–200m stale/network-location readings.
-export function getCurrentLocation({ timeout = 15000, targetAccuracy = 12 } = {}) {
+// Fast browser location: accept a good-enough GPS fix quickly, while still
+// allowing the browser to improve it for a short period. Waiting for 8–12m
+// accuracy on laptops can take a long time because many laptops use Wi-Fi/IP
+// location before a real GPS-capable source is available.
+export function getCurrentLocation({ timeout = 8000, targetAccuracy = 50 } = {}) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("Geolocation not supported"));
@@ -41,13 +48,12 @@ export function getCurrentLocation({ timeout = 15000, targetAccuracy = 12 } = {}
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       if (timerId !== null) window.clearTimeout(timerId);
       if (best) resolve(best);
-      else reject(error || new Error("Unable to get a GPS fix"));
+      else reject(error || new Error("Unable to get a location fix"));
     };
 
     const onPosition = (pos) => {
       const accuracy = Number(pos.coords.accuracy);
       if (!Number.isFinite(accuracy)) return;
-
       const next = {
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
@@ -57,23 +63,20 @@ export function getCurrentLocation({ timeout = 15000, targetAccuracy = 12 } = {}
         speed: pos.coords.speed ?? null,
         timestamp: pos.timestamp,
       };
-
       if (!best || accuracy < best.accuracy) best = next;
       if (accuracy <= targetAccuracy) finish();
     };
 
     const onError = (error) => {
-      // A timeout/error may still have produced a useful GPS fix. Return it.
       if (best) finish();
-      else if (error?.code === 1) finish(error);
+      else finish(error);
     };
 
     watchId = navigator.geolocation.watchPosition(onPosition, onError, {
       enableHighAccuracy: true,
-      timeout: timeout,
-      maximumAge: 0,
+      timeout,
+      maximumAge: 15000,
     });
-
     timerId = window.setTimeout(() => finish(), timeout);
   });
 }
