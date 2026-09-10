@@ -24,14 +24,15 @@ async function ensureAuthenticated() {
   return new Promise((resolve, reject) => {
     let settled = false;
     let timer;
+    let unsubscribe = () => {};
     const finish = (callback, value) => {
       if (settled) return;
       settled = true;
       if (timer) window.clearTimeout(timer);
-      unsubscribe?.();
+      unsubscribe();
       callback(value);
     };
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) finish(resolve, user);
       else finish(reject, new Error("Your Firebase session is missing. Please log in again before submitting a report."));
     }, (error) => finish(reject, error));
@@ -65,14 +66,7 @@ export async function signInWithGoogle() {
 
 export async function saveUserProfile(firebaseUser, data = {}) {
   if (!firebaseUser) return null;
-  const profile = {
-    uid: firebaseUser.uid,
-    name: data.name?.trim() || firebaseUser.displayName || "RoadSense user",
-    email: data.email || firebaseUser.email || "",
-    phone: data.phone || firebaseUser.phoneNumber || "",
-    method: data.method || "phone",
-    updatedAt: serverTimestamp(),
-  };
+  const profile = { uid: firebaseUser.uid, name: data.name?.trim() || firebaseUser.displayName || "RoadSense user", email: data.email || firebaseUser.email || "", phone: data.phone || firebaseUser.phoneNumber || "", method: data.method || "phone", updatedAt: serverTimestamp() };
   await setDoc(doc(db, "users", firebaseUser.uid), profile, { merge: true });
   return profile;
 }
@@ -94,15 +88,11 @@ function compressPhotoForFirestore(dataUrl) {
       canvas.width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
       canvas.height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
       const ctx = canvas.getContext("2d", { alpha: false });
-      if (!ctx) return resolve(dataUrl);
+      if (!ctx) return resolve(null);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       let quality = 0.62;
       let output = canvas.toDataURL("image/jpeg", quality);
-      // Keep the Firestore fallback comfortably below the 1 MiB document limit.
-      while (output.length > 700000 && quality > 0.28) {
-        quality -= 0.08;
-        output = canvas.toDataURL("image/jpeg", quality);
-      }
+      while (output.length > 700000 && quality > 0.28) { quality -= 0.08; output = canvas.toDataURL("image/jpeg", quality); }
       resolve(output);
     };
     image.onerror = () => resolve(null);
@@ -115,7 +105,6 @@ export async function submitHazardReport({ hazardType, location, coordinates, ph
   const compactPhoto = photo ? await compressPhotoForFirestore(photo) : null;
   let photoUrl = null;
   let photoData = null;
-  let photoUploadWarning = null;
 
   if (compactPhoto) {
     try {
@@ -123,23 +112,17 @@ export async function submitHazardReport({ hazardType, location, coordinates, ph
       await uploadString(fileRef, compactPhoto, "data_url", { contentType: "image/jpeg" });
       photoUrl = await getDownloadURL(fileRef);
     } catch (error) {
-      // Storage can be unavailable on the Firebase Spark plan. Preserve the
-      // compressed photo inside the report so details + photo still reach Firestore.
+      // If Storage is unavailable, keep the compact image in Firestore so the
+      // report still contains both details and a photo. The original image is
+      // never written to Firestore.
+      console.warn("Storage upload unavailable; using Firestore photo fallback.", error);
       photoData = compactPhoto;
-      photoUploadWarning = error?.code || "photo-storage-unavailable";
     }
   }
 
   return addDoc(collection(db, "reports"), {
-    hazardType,
-    location,
-    coordinates,
-    reportedBy: user.uid,
-    photo: photoUrl,
-    photoData,
-    upvotes: 0,
-    status: "pending",
-    createdAt: serverTimestamp(),
+    hazardType, location, coordinates, reportedBy: user.uid,
+    photo: photoUrl, photoData, upvotes: 0, status: "pending", createdAt: serverTimestamp(),
   });
 }
 
@@ -170,8 +153,14 @@ export async function getReports() {
 
 export async function getMyReports(uid) {
   if (!uid) return [];
-  const snapshot = await getDocs(query(collection(db, "reports"), where("reportedBy", "==", uid), orderBy("createdAt", "desc")));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  // Avoid a required composite index for where(reportedBy) + orderBy(createdAt).
+  // We sort the user's small report list in memory instead.
+  const snapshot = await getDocs(query(collection(db, "reports"), where("reportedBy", "==", uid)));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 }
 
 export function getLocalReports() { return []; }
