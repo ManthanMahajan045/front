@@ -1,4 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
+import { getAuth, signInAnonymously } from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -10,6 +11,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
 // Frontend and backend use the same Firebase project. Keep the public web
 // config in Vercel/local environment variables instead of source control.
@@ -34,12 +36,23 @@ const requiredConfig = [
 export const USE_REAL_FIREBASE = requiredConfig.every(Boolean);
 
 let db = null;
+let auth = null;
+let storage = null;
 if (USE_REAL_FIREBASE) {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   db = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
 }
 
-export { db };
+export { db, auth, storage };
+
+async function ensureAuthenticated() {
+  if (!auth) return null;
+  if (auth.currentUser) return auth.currentUser;
+  const result = await signInAnonymously(auth);
+  return result.user;
+}
 
 const LOCAL_KEY = "roadsense_demo_reports";
 
@@ -56,7 +69,31 @@ function writeLocalReports(reports) {
 }
 
 export async function submitHazardReport({ hazardType, location, coordinates, reportedBy, photo }) {
-  const payload = {
+  if (USE_REAL_FIREBASE) {
+    const user = await ensureAuthenticated();
+    let photoUrl = null;
+
+    if (photo && storage) {
+      const fileRef = ref(storage, `reports/${user.uid}/${Date.now()}.jpg`);
+      await uploadString(fileRef, photo, "data_url", { contentType: "image/jpeg" });
+      photoUrl = await getDownloadURL(fileRef);
+    }
+
+    return addDoc(collection(db, "reports"), {
+      hazardType,
+      location,
+      coordinates,
+      reportedBy: user?.uid || reportedBy || "anonymous",
+      photo: photoUrl,
+      upvotes: 0,
+      status: "pending",
+      createdAt: serverTimestamp(),
+    });
+  }
+
+  const reports = readLocalReports();
+  const newReport = {
+    id: `local_${Date.now()}`,
     hazardType,
     location,
     coordinates,
@@ -64,17 +101,6 @@ export async function submitHazardReport({ hazardType, location, coordinates, re
     photo: photo || null,
     upvotes: 0,
     status: "pending",
-    createdAt: serverTimestamp(),
-  };
-
-  if (USE_REAL_FIREBASE) {
-    return addDoc(collection(db, "reports"), payload);
-  }
-
-  const reports = readLocalReports();
-  const newReport = {
-    id: `local_${Date.now()}`,
-    ...payload,
     createdAt: new Date().toISOString(),
   };
   reports.push(newReport);
@@ -84,6 +110,7 @@ export async function submitHazardReport({ hazardType, location, coordinates, re
 
 export async function upvoteReport(reportId) {
   if (USE_REAL_FIREBASE) {
+    await ensureAuthenticated();
     const reportRef = doc(db, "reports", reportId);
     return runTransaction(db, async (transaction) => {
       const reportDoc = await transaction.get(reportRef);
@@ -112,6 +139,7 @@ export async function upvoteReport(reportId) {
 
 export async function getReports() {
   if (USE_REAL_FIREBASE) {
+    await ensureAuthenticated();
     const snapshot = await getDocs(query(collection(db, "reports"), orderBy("createdAt", "desc")));
     return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   }
