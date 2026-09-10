@@ -43,22 +43,28 @@ async function sendPasswordReset(email) { return sendPasswordResetEmail(auth, em
 export async function signUpWithEmail(email, password, name) {
   const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
   if (name?.trim()) await updateProfile(result.user, { displayName: name.trim() });
-  await saveUserProfile(result.user, { name: name?.trim() || email.split("@")[0], email: result.user.email || email.trim(), method: "email" });
+  // Profile storage is optional; never block successful Firebase Auth signup on it.
+  saveUserProfile(result.user, { name: name?.trim() || email.split("@")[0], email: result.user.email || email.trim(), method: "email" })
+    .catch((error) => console.warn("Profile save deferred:", error));
   return result.user;
 }
 
 export async function signInWithEmail(email, password) {
   const result = await signInWithEmailAndPassword(auth, email.trim(), password);
-  return { user: result.user, profile: await getUserProfile(result.user.uid) };
+  let profile = null;
+  try { profile = await Promise.race([getUserProfile(result.user.uid), new Promise((resolve) => window.setTimeout(() => resolve(null), 2500))]); }
+  catch (error) { console.warn("Profile read deferred:", error); }
+  return { user: result.user, profile };
 }
 
-export async function resetPasswordWithEmail(email) { return sendPasswordReset(email); }
+export async function resetPasswordWithEmail(email) { return sendPasswordResetEmail(auth, email.trim()); }
 
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   const result = await signInWithPopup(auth, provider);
-  const profile = await saveUserProfile(result.user, { name: result.user.displayName || "RoadSense user", email: result.user.email || "", method: "google" });
+  const profile = { uid: result.user.uid, name: result.user.displayName || "RoadSense user", email: result.user.email || "", phone: result.user.phoneNumber || "", method: "google" };
+  saveUserProfile(result.user, profile).catch((error) => console.warn("Profile save deferred:", error));
   return { user: result.user, profile };
 }
 
@@ -100,25 +106,8 @@ function compressPhotoForFirestore(dataUrl) {
 
 export async function submitHazardReport({ hazardType, location, coordinates, photo }) {
   const user = await ensureAuthenticated();
-
-  // Do not call Firebase Cloud Storage here. The current Firebase project can
-  // run on Spark, while Cloud Storage requires Blaze and otherwise returns
-  // 402/403 responses that appear in the browser as CORS/preflight failures.
-  // Firestore is the report backend, so keep a compact photo inside the report
-  // document instead. The image is resized/compressed before it is written.
   const photoData = photo ? await compressPhotoForFirestore(photo) : null;
-
-  return addDoc(collection(db, "reports"), {
-    hazardType,
-    location,
-    coordinates,
-    reportedBy: user.uid,
-    photo: null,
-    photoData,
-    upvotes: 0,
-    status: "pending",
-    createdAt: serverTimestamp(),
-  });
+  return addDoc(collection(db, "reports"), { hazardType, location, coordinates, reportedBy: user.uid, photo: null, photoData, upvotes: 0, status: "pending", createdAt: serverTimestamp() });
 }
 
 export async function submitFeedback({ message, category = "General", rating = null }) {
@@ -126,16 +115,7 @@ export async function submitFeedback({ message, category = "General", rating = n
   const cleanMessage = String(message || "").trim();
   if (cleanMessage.length < 5) throw new Error("Please enter at least 5 characters of feedback.");
   if (cleanMessage.length > 2000) throw new Error("Feedback must be 2000 characters or less.");
-
-  return addDoc(collection(db, "feedback"), {
-    message: cleanMessage,
-    category: String(category || "General").trim() || "General",
-    rating: Number.isFinite(rating) ? rating : null,
-    submittedBy: user.uid,
-    email: user.email || "",
-    phone: user.phoneNumber || "",
-    createdAt: serverTimestamp(),
-  });
+  return addDoc(collection(db, "feedback"), { message: cleanMessage, category: String(category || "General").trim() || "General", rating: Number.isFinite(rating) ? rating : null, submittedBy: user.uid, email: user.email || "", phone: user.phoneNumber || "", createdAt: serverTimestamp() });
 }
 
 export async function upvoteReport(reportId) {
@@ -166,11 +146,7 @@ export async function getReports() {
 export async function getMyReports(uid) {
   if (!uid) return [];
   const snapshot = await getDocs(query(collection(db, "reports"), where("reportedBy", "==", uid)));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => {
-    const aTime = a.createdAt?.toMillis?.() || 0;
-    const bTime = b.createdAt?.toMillis?.() || 0;
-    return bTime - aTime;
-  });
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
 }
 
 export function getLocalReports() { return []; }
