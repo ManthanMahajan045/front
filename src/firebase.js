@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
+import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where, deleteDoc } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDrvaJONaD-CK2_WldLkUA-NtwhFBChPkU",
@@ -43,7 +43,6 @@ async function sendPasswordReset(email) { return sendPasswordResetEmail(auth, em
 export async function signUpWithEmail(email, password, name) {
   const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
   if (name?.trim()) await updateProfile(result.user, { displayName: name.trim() });
-  // Profile storage is optional; never block successful Firebase Auth signup on it.
   saveUserProfile(result.user, { name: name?.trim() || email.split("@")[0], email: result.user.email || email.trim(), method: "email" })
     .catch((error) => console.warn("Profile save deferred:", error));
   return result.user;
@@ -79,6 +78,72 @@ export async function getUserProfile(uid) {
   if (!uid) return null;
   const snapshot = await getDoc(doc(db, "users", uid));
   return snapshot.exists() ? snapshot.data() : null;
+}
+
+function cleanSavedLocation(location = {}) {
+  const type = ["home", "work", "custom"].includes(location.type) ? location.type : "custom";
+  const name = String(location.name || "").trim();
+  const address = String(location.address || "").trim();
+  const lat = Number(location.latitude ?? location.coordinates?.lat);
+  const lng = Number(location.longitude ?? location.coordinates?.lng);
+  if (!name) throw new Error("Please enter a name for this saved place.");
+  if (!address) throw new Error("Please choose a location with an address.");
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) throw new Error("Please choose a valid map location.");
+  return { type, name, address, latitude: lat, longitude: lng };
+}
+
+function savedLocationsCollection(uid) { return collection(db, "users", uid, "savedLocations"); }
+
+export async function getSavedLocations(uid) {
+  const user = await ensureAuthenticated();
+  if (!uid || uid !== user.uid) throw new Error("You can only access your own saved places.");
+  const snapshot = await getDocs(query(savedLocationsCollection(user.uid), orderBy("createdAt", "asc")));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), coordinates: { lat: item.data().latitude, lng: item.data().longitude } }));
+}
+
+export async function createSavedLocation(location) {
+  const user = await ensureAuthenticated();
+  const data = cleanSavedLocation(location);
+  const collectionRef = savedLocationsCollection(user.uid);
+  if (data.type === "home" || data.type === "work") {
+    const fixedRef = doc(collectionRef, data.type);
+    const existing = await getDoc(fixedRef);
+    if (existing.exists()) throw new Error(`You already have a ${data.type === "home" ? "Home" : "Work"} location. Edit the existing one instead.`);
+    await setDoc(fixedRef, { ...data, uid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    return { id: data.type, ...data, coordinates: { lat: data.latitude, lng: data.longitude } };
+  }
+  const result = await addDoc(collectionRef, { ...data, uid: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  return { id: result.id, ...data, coordinates: { lat: data.latitude, lng: data.longitude } };
+}
+
+export async function updateSavedLocation(locationId, location) {
+  const user = await ensureAuthenticated();
+  if (!locationId) throw new Error("Saved place not found.");
+  const data = cleanSavedLocation(location);
+  const collectionRef = savedLocationsCollection(user.uid);
+  const currentRef = doc(collectionRef, locationId);
+  const current = await getDoc(currentRef);
+  if (!current.exists()) throw new Error("Saved place not found.");
+  const targetId = data.type === "home" || data.type === "work" ? data.type : locationId;
+  if (targetId !== locationId) {
+    const targetRef = doc(collectionRef, targetId);
+    const target = await getDoc(targetRef);
+    if (target.exists()) throw new Error(`You already have a ${data.type === "home" ? "Home" : "Work"} location. Edit that location instead.`);
+    await setDoc(targetRef, { ...data, uid: user.uid, createdAt: current.data().createdAt || serverTimestamp(), updatedAt: serverTimestamp() });
+    await deleteDoc(currentRef);
+    return { id: targetId, ...data, coordinates: { lat: data.latitude, lng: data.longitude } };
+  }
+  await updateDoc(currentRef, { ...data, uid: user.uid, updatedAt: serverTimestamp() });
+  return { id: locationId, ...data, coordinates: { lat: data.latitude, lng: data.longitude } };
+}
+
+export async function deleteSavedLocation(locationId) {
+  const user = await ensureAuthenticated();
+  if (!locationId) return;
+  const locationRef = doc(savedLocationsCollection(user.uid), locationId);
+  const existing = await getDoc(locationRef);
+  if (!existing.exists()) return;
+  await deleteDoc(locationRef);
 }
 
 function compressPhotoForFirestore(dataUrl) {
