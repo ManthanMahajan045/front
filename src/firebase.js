@@ -1,11 +1,11 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { getFirestore, collection, addDoc, doc, setDoc, getDoc, runTransaction, updateDoc, serverTimestamp, getDocs, query, orderBy, where } from "firebase/firestore";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
-// RoadSense production Firebase web app configuration.
-// Keep this aligned with Firebase Project Settings for road-sense-bca4e.
-// Do not let stale/mistyped Vercel VITE_* values override the real project config.
+// RoadSense production Firebase web app configuration from Firebase Console.
+// This intentionally ignores stale Vercel VITE_* overrides so the deployed app
+// cannot accidentally initialize Firebase with an old/invalid API key.
 const firebaseConfig = {
   apiKey: "AIzaSyDrvaJONaD-CK2_W1dLkUA-NtwhFBChPkU",
   authDomain: "road-sense-bca4e.firebaseapp.com",
@@ -23,9 +23,10 @@ const storage = getStorage(app);
 export { db, auth, storage };
 
 async function ensureAuthenticated() {
-  if (auth.currentUser) return auth.currentUser;
-  const result = await signInAnonymously(auth);
-  return result.user;
+  if (!auth.currentUser) {
+    throw new Error("Your Firebase session is missing. Please log in again before submitting a report.");
+  }
+  return auth.currentUser;
 }
 
 export async function signUpWithEmail(email, password, name) {
@@ -60,11 +61,7 @@ export async function getUserProfile(uid) {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
-const LOCAL_KEY = "roadsense_demo_reports";
-function readLocalReports() { try { return JSON.parse(localStorage.getItem(LOCAL_KEY)) || []; } catch { return []; } }
-function writeLocalReports(reports) { localStorage.setItem(LOCAL_KEY, JSON.stringify(reports)); }
-
-export async function submitHazardReport({ hazardType, location, coordinates, reportedBy, photo }) {
+export async function submitHazardReport({ hazardType, location, coordinates, photo }) {
   const user = await ensureAuthenticated();
   let photoUrl = null;
   if (photo) {
@@ -83,8 +80,7 @@ export async function submitHazardReport({ hazardType, location, coordinates, re
 }
 
 export async function upvoteReport(reportId) {
-  const user = await ensureAuthenticated();
-  if (!user) throw new Error("Authentication required.");
+  await ensureAuthenticated();
   const reportRef = doc(db, "reports", reportId);
   return runTransaction(db, async (transaction) => {
     const reportDoc = await transaction.get(reportRef);
@@ -114,5 +110,4 @@ export async function getMyReports(uid) {
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }
 
-// Kept only for legacy authority UI imports; new report data comes from Firestore.
-export function getLocalReports() { return readLocalReports(); }
+export function getLocalReports() { return []; }
