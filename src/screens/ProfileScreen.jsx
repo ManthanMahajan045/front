@@ -4,7 +4,7 @@ import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import { getMyReports, getUserProfile } from "../firebase";
 
-const SETTINGS_ROWS = [{ key: "saved", label: "Saved Location" }, { key: "notifications", label: "Notification Settings", target: "alerts" }, { key: "help", label: "Help & Support" }, { key: "about", label: "About RoadSense" }];
+const SETTINGS_ROWS = [{ key: "saved", label: "Saved Location", target: "saved" }, { key: "notifications", label: "Notification Settings", target: "alerts" }, { key: "help", label: "Help & Support" }, { key: "about", label: "About RoadSense" }];
 const MODALS = { saved: { title: "Saved Location", text: "Your saved locations will appear here. You can use the map and location tools to choose a place." }, help: { title: "Help & Support", text: "Use RoadSense to report hazards, view reports and receive nearby safety alerts. If a button does not respond, close this window and try again." }, about: { title: "About RoadSense", text: "RoadSense is a real-time road hazard alert system designed to help communities report hazards and travel more safely." } };
 
 export default function ProfileScreen({ onNavigate, onMenu, user }) {
