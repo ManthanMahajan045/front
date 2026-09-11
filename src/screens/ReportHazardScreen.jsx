@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Camera, ImagePlus, X, MapPin } from "lucide-react";
+import { Camera, ImagePlus, X, MapPin, RefreshCw } from "lucide-react";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import { hazardTypeOptions } from "../sampleData";
 import { submitHazardReport } from "../firebase";
-import { getCurrentLocation, reverseGeocode } from "../utils/geo";
+import { getCurrentLocation, reverseGeocode, geocodeAddress } from "../utils/geo";
 
 export default function ReportHazardScreen({ onNavigate }) {
   const [selectedType, setSelectedType] = useState(null);
@@ -13,24 +13,62 @@ export default function ReportHazardScreen({ onNavigate }) {
   const [photo, setPhoto] = useState(null);
   const [coords, setCoords] = useState(null);
   const [address, setAddress] = useState("Detecting your location…");
+  const [accuracy, setAccuracy] = useState(null);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualAddress, setManualAddress] = useState("");
+  const [locationLoading, setLocationLoading] = useState(true);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
+  async function detectLocation() {
+    setLocationLoading(true);
+    setError(null);
+    setManualMode(false);
+    try {
+      const loc = await getCurrentLocation({ timeout: 10000, targetAccuracy: 50 });
+      setCoords(loc);
+      setAccuracy(loc.accuracy);
+      try {
+        const result = await reverseGeocode(loc.lat, loc.lng, 3500);
+        setAddress(result);
+      } catch {
+        setAddress(`${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`);
+      }
+    } catch {
+      setCoords(null);
+      setAccuracy(null);
+      setAddress("Location not available");
+      setError("GPS location could not be detected. Enter the actual location manually.");
+    } finally {
+      setLocationLoading(false);
+    }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    getCurrentLocation({ timeout: 8000, targetAccuracy: 50 })
-      .then((loc) => {
-        if (cancelled) return;
-        setCoords(loc);
-        // Address is cosmetic. Do not make report submission wait for the
-        // reverse-geocoding network request.
-        reverseGeocode(loc.lat, loc.lng, 3500)
-          .then((result) => { if (!cancelled) setAddress(result); })
-          .catch(() => { if (!cancelled) setAddress(`${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`); });
-      })
-      .catch(() => { if (!cancelled) setAddress("Location not available — enable location access"); });
-    return () => { cancelled = true; };
+    detectLocation();
   }, []);
+
+  async function handleManualLocation() {
+    const query = manualAddress.trim();
+    if (!query) {
+      setError("Please enter a city, district, landmark, or full address.");
+      return;
+    }
+    setLocationLoading(true);
+    setError(null);
+    try {
+      const result = await geocodeAddress(query);
+      setCoords(result);
+      setAccuracy(null);
+      setAddress(result.displayName);
+      setManualMode(false);
+      setManualAddress("");
+    } catch (err) {
+      setError(err?.message || "Location not found. Please try again.");
+    } finally {
+      setLocationLoading(false);
+    }
+  }
 
   function handlePhotoChange(e) {
     const file = e.target.files?.[0];
@@ -43,7 +81,7 @@ export default function ReportHazardScreen({ onNavigate }) {
 
   async function handleSubmit() {
     if (!selectedType) { setError("Please select a hazard type first."); return; }
-    if (!coords) { setError("Location is still being detected. Please wait a few seconds and try again."); return; }
+    if (!coords) { setError("Please set the actual hazard location before submitting."); return; }
     setSubmitting(true); setError(null);
     try {
       const result = await submitHazardReport({ hazardType: selectedType, location: address, coordinates: coords, photo });
@@ -83,9 +121,15 @@ export default function ReportHazardScreen({ onNavigate }) {
       <div className="section-label">What did you find?</div>
       <div className="hazard-grid">{hazardTypeOptions.map((type) => <button key={type} className={`hazard-option ${selectedType === type ? "selected" : ""}`} onClick={() => setSelectedType(type)}>{type}</button>)}</div>
       <div className="section-label">Location</div>
-      <div className="location-box"><MapPin size={17} /><div><div className="label">Current Location</div><div className="value">{address}</div></div></div>
+      <div className="location-box"><MapPin size={17} /><div><div className="label">Reported Location</div><div className="value">{locationLoading ? "Detecting…" : address}</div>{accuracy !== null && <small>GPS accuracy: approximately {Math.round(accuracy)} m</small>}</div></div>
+      {accuracy !== null && accuracy > 1000 && <p className="form-error">This location is approximate and may be wrong. Please enter the actual hazard location.</p>}
+      <div className="location-actions">
+        <button type="button" className="photo-upload-option" onClick={detectLocation} disabled={locationLoading}><RefreshCw size={16} /> <span>Retry GPS</span></button>
+        <button type="button" className="photo-upload-option" onClick={() => setManualMode((value) => !value)}>{manualMode ? "Cancel" : "Enter location manually"}</button>
+      </div>
+      {manualMode && <div className="manual-location-form"><input type="text" value={manualAddress} onChange={(e) => setManualAddress(e.target.value)} placeholder="Example: Bharatpur, Rajasthan" /><button type="button" className="btn-primary" onClick={handleManualLocation} disabled={locationLoading}>{locationLoading ? "Searching…" : "Use this location"}</button></div>}
       {error && <p className="form-error">{error}</p>}
-      <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>{submitting ? "Submitting…" : "Submit Report"}</button>
+      <button className="btn-primary" onClick={handleSubmit} disabled={submitting || locationLoading}>{submitting ? "Submitting…" : "Submit Report"}</button>
       <BottomNav active="reports" onNavigate={onNavigate} />
     </div>
   );
