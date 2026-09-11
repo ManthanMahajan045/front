@@ -1,4 +1,12 @@
-/* Auth switch: keep the account prompt and action readable, centered, and on one clean line when space allows. */
+/* Auth text contrast: keep the light-mode login labels and account prompt clearly readable. */
+.auth-screen .auth-form label > span,
+.auth-screen .auth-switch {
+  color: #4b5563 !important;
+  -webkit-text-fill-color: #4b5563 !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
 .auth-screen .auth-switch {
   width: 100%;
   display: flex;
@@ -9,8 +17,6 @@
   margin: 20px auto 0;
   padding: 0 8px;
   text-align: center;
-  color: var(--text) !important;
-  opacity: 1 !important;
   line-height: 1.5;
   white-space: normal;
   overflow: visible;
