@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./index.css";
 import "./professional.css";
-import "./leaflet/dist/leaflet.css";
+import "leaflet/dist/leaflet.css";
 import AuthScreen from "./screens/AuthScreen";
 import HomeScreen from "./screens/HomeScreen";
 import SearchScreen from "./screens/SearchScreen";
