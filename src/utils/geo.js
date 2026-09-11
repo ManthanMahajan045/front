@@ -26,10 +26,28 @@ export async function reverseGeocode(lat, lng, timeout = 4000) {
   }
 }
 
-// Fast browser location: accept a good-enough GPS fix quickly, while still
-// allowing the browser to improve it for a short period. Waiting for 8–12m
-// accuracy on laptops can take a long time because many laptops use Wi-Fi/IP
-// location before a real GPS-capable source is available.
+export async function geocodeAddress(query, timeout = 6000) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeout);
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(query)}`;
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error("Address search failed");
+    const data = await res.json();
+    const result = data?.[0];
+    if (!result) throw new Error("Location not found. Try a city, district, or landmark.");
+    return {
+      lat: Number(result.lat),
+      lng: Number(result.lon),
+      accuracy: 1000,
+      timestamp: Date.now(),
+      displayName: result.display_name,
+    };
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 export function getCurrentLocation({ timeout = 8000, targetAccuracy = 50 } = {}) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
