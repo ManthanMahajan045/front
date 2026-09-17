@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, ArrowLeft } from "lucide-react";
 import { signOut } from "firebase/auth";
-import { auth, signInWithEmail, signInWithGoogle } from "../firebase";
+import { auth, signInWithEmail } from "../firebase";
 
 const AUTH_KEY = "roadsense-auth";
 
 const getAuthError = (error) => {
   const code = error?.code || "";
-  if (code.includes("popup-closed-by-user")) return "Google sign-in was cancelled.";
-  if (code.includes("popup-blocked")) return "Your browser blocked the Google sign-in popup. Allow popups and try again.";
   if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) return "Email or password is incorrect.";
   if (code.includes("too-many-requests")) return "Too many attempts. Please wait and try again.";
-  if (code.includes("operation-not-allowed")) return "This sign-in method is not enabled in Firebase yet.";
+  if (code.includes("operation-not-allowed")) return "Email/password sign-in is not enabled in Firebase yet.";
   if (code.includes("unauthorized-domain")) return "This website is not authorized in Firebase Authentication.";
   return error?.message || "We could not complete authority sign-in.";
 };
@@ -61,18 +59,6 @@ export default function AuthorityLoginScreen({ onAuthenticated, onBack }) {
     }
   };
 
-  const googleLogin = async () => {
-    setError("");
-    setBusy(true);
-    try {
-      await completeAuthorityLogin(await signInWithGoogle());
-    } catch (err) {
-      setError(err.message?.startsWith("This account is not authorized") ? err.message : getAuthError(err));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <main className="auth-screen authority-auth-screen">
       <section className="auth-card authority-auth-card" aria-label="Authority login">
@@ -97,11 +83,9 @@ export default function AuthorityLoginScreen({ onAuthenticated, onBack }) {
           {error && <div className="auth-error" role="alert">{error}</div>}
           <button className="auth-primary" type="submit" disabled={busy}>{busy ? "Verifying…" : "Sign in as authority"}</button>
         </form>
-        <div className="auth-divider"><span>or continue with</span></div>
-        <div className="auth-socials"><button className="auth-google" type="button" onClick={googleLogin} disabled={busy}><span className="google-mark">G</span>{busy ? "Signing in…" : "Continue with Google"}</button></div>
         <p className="auth-legal">Access is checked using Firebase authority roles/custom claims.</p>
       </section>
-      <style>{`.authority-auth-screen .authority-auth-card{position:relative}.authority-auth-screen .auth-back{position:absolute;top:22px;left:22px}.authority-auth-screen .authority-shield{width:58px;height:58px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;background:#ede9fe;color:#6d28d9}.authority-auth-screen .authority-notice{display:flex;align-items:center;gap:8px;padding:12px 14px;margin:20px 0;color:#5b21b6;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;font-size:13px}.authority-auth-screen .auth-google{display:flex;align-items:center;justify-content:center;gap:9px}.authority-auth-screen .google-mark{font-weight:800;font-size:18px;color:#4285f4}.authority-auth-screen .auth-legal{text-align:center;font-size:12px;color:var(--muted);margin:18px 0 0}`}</style>
+      <style>{`.authority-auth-screen .authority-auth-card{position:relative}.authority-auth-screen .auth-back{position:absolute;top:22px;left:22px}.authority-auth-screen .authority-shield{width:58px;height:58px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;background:#ede9fe;color:#6d28d9}.authority-auth-screen .authority-notice{display:flex;align-items:center;gap:8px;padding:12px 14px;margin:20px 0;color:#5b21b6;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;font-size:13px}.authority-auth-screen .auth-legal{text-align:center;font-size:12px;color:var(--muted);margin:18px 0 0}`}</style>
     </main>
   );
 }
