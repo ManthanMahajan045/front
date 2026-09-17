@@ -3,6 +3,7 @@ import "./index.css";
 import "./professional.css";
 import "leaflet/dist/leaflet.css";
 import AuthScreen from "./screens/AuthScreen";
+import AuthorityLoginScreen from "./screens/AuthorityLoginScreen";
 import HomeScreen from "./screens/HomeScreen";
 import SearchScreen from "./screens/SearchScreen";
 import SavedPlacesScreen from "./screens/SavedPlacesScreen";
@@ -28,6 +29,7 @@ function readStoredUser() {
 
 export default function App() {
   const [user, setUser] = useState(readStoredUser);
+  const [authorityUser, setAuthorityUser] = useState(null);
   const [screen, setScreen] = useState("home");
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -53,5 +55,8 @@ export default function App() {
   const screenProps = { onNavigate: navigate, theme, onToggleTheme: toggleTheme, onMenu: () => setMenuOpen(true), language, user };
 
   if (!user) return <div className="app-shell auth-app-shell"><AuthScreen onAuthenticated={(nextUser) => { localStorage.setItem(AUTH_KEY, JSON.stringify(nextUser)); setUser(nextUser); }} /></div>;
-  return <div className="app-shell">{screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} onNotifications={() => navigate("alerts")} />}{screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "saved" && <SavedPlacesScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}{screen === "report" && <ReportHazardScreen {...screenProps} />}{screen === "profile" && <ProfileScreen {...screenProps} />}{screen === "alerts" && <AlertsScreen {...screenProps} />}{screen === "reports" && <ReportsScreen {...screenProps} />}{screen === "authority" && <AuthorityDashboard {...screenProps} onBack={() => navigate("home")} />}{menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={changeLanguage} />}</div>;
+  if (screen === "authority" && !authorityUser) {
+    return <div className="app-shell auth-app-shell"><AuthorityLoginScreen onBack={() => navigate("home")} onAuthenticated={(nextUser) => { setAuthorityUser(nextUser); setScreen("authority"); }} /></div>;
+  }
+  return <div className="app-shell">{screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} onNotifications={() => navigate("alerts")} />}{screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "saved" && <SavedPlacesScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}{screen === "report" && <ReportHazardScreen {...screenProps} />}{screen === "profile" && <ProfileScreen {...screenProps} />}{screen === "alerts" && <AlertsScreen {...screenProps} />}{screen === "reports" && <ReportsScreen {...screenProps} />}{screen === "authority" && <AuthorityDashboard {...screenProps} authorityUser={authorityUser} onBack={() => { setAuthorityUser(null); navigate("home"); }} />}{menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={changeLanguage} />}</div>;
 }
