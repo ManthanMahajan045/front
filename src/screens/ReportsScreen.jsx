@@ -17,7 +17,7 @@ export default function ReportsScreen({ onNavigate, user }) {
       setMyReports(mine);
       setCommunityReports(community.filter((r) => r.status === "verified"));
     } catch (err) {
-      console.error("Reports load failed:", err);
+      console.warn("Reports could not be loaded:", err?.message || err);
       setMyReports([]);
       setCommunityReports([]);
     } finally { setLoading(false); }
@@ -30,7 +30,7 @@ export default function ReportsScreen({ onNavigate, user }) {
       const newCount = await upvoteReport(id);
       setMyReports((prev) => prev.map((h) => h.id === id ? { ...h, upvotes: newCount, status: newCount >= 3 ? "verified" : "pending" } : h));
       setCommunityReports((prev) => prev.map((h) => h.id === id ? { ...h, upvotes: newCount, status: newCount >= 3 ? "verified" : "pending" } : h));
-    } catch (err) { console.error("Upvote failed:", err); }
+    } catch (err) { console.warn("Upvote could not be completed:", err?.message || err); }
   }
 
   const visible = tab === "mine" ? myReports : [...communityReports, ...confirmedHazards];
