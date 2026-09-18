@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight, X } from "lucide-react";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
-import { getMyReports, getUserProfile } from "../firebase";
+import { getMyReports } from "../firebase";
 
 const SETTINGS_ROWS = [{ key: "saved", label: "Saved Location", target: "saved" }, { key: "notifications", label: "Notification Settings", target: "alerts" }, { key: "help", label: "Help & Support" }, { key: "about", label: "About RoadSense" }];
 const MODALS = { saved: { title: "Saved Location", text: "Your saved locations will appear here. You can use the map and location tools to choose a place." }, help: { title: "Help & Support", text: "Use RoadSense to report hazards, view reports and receive nearby safety alerts. If a button does not respond, close this window and try again." }, about: { title: "About RoadSense", text: "RoadSense is a real-time road hazard alert system designed to help communities report hazards and travel more safely." } };
@@ -16,14 +16,9 @@ export default function ProfileScreen({ onNavigate, onMenu, user }) {
     let active = true;
     async function load() {
       if (!user?.firebaseUid) return;
-      try {
-        const remoteProfile = await getUserProfile(user.firebaseUid);
-        if (!active) return;
-        setProfile({ ...user, ...(remoteProfile || {}) });
-      } catch (error) {
-        if (active) setProfile(user);
-        console.warn("Profile data could not be loaded:", error?.message || error);
-      }
+      // The authenticated user data already comes from Firebase Auth/local session.
+      // Do not make the dashboard depend on a Firestore users/{uid} read.
+      setProfile(user);
 
       try {
         const reports = await getMyReports(user.firebaseUid);
