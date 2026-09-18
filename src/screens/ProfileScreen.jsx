@@ -17,11 +17,27 @@ export default function ProfileScreen({ onNavigate, onMenu, user }) {
     async function load() {
       if (!user?.firebaseUid) return;
       try {
-        const [remoteProfile, reports] = await Promise.all([getUserProfile(user.firebaseUid), getMyReports(user.firebaseUid)]);
+        const remoteProfile = await getUserProfile(user.firebaseUid);
         if (!active) return;
         setProfile({ ...user, ...(remoteProfile || {}) });
-        setStats({ reported: reports.length, verified: reports.filter((r) => r.status === "verified").length, resolved: reports.filter((r) => r.status === "resolved").length });
-      } catch (error) { console.error("Profile sync failed:", error); }
+      } catch (error) {
+        if (active) setProfile(user);
+        console.warn("Profile data could not be loaded:", error?.message || error);
+      }
+
+      try {
+        const reports = await getMyReports(user.firebaseUid);
+        if (!active) return;
+        setStats({
+          reported: reports.length,
+          verified: reports.filter((r) => r.status === "verified").length,
+          resolved: reports.filter((r) => r.status === "resolved").length
+        });
+      } catch (error) {
+        // A reports permission/index problem must not break the user's profile dashboard.
+        if (active) setStats({ reported: 0, verified: 0, resolved: 0 });
+        console.warn("Report statistics unavailable:", error?.message || error);
+      }
     }
     load();
     return () => { active = false; };
