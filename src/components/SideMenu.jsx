@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Bell, ChevronRight, Globe2, HelpCircle, FileText, Home, LogOut, ShieldCheck, LayoutDashboard, X, Bookmark, BookOpen, Info, MessageSquare, LockKeyhole, Route, Phone, Ambulance, Flame, ShieldAlert } from "lucide-react";
-import { submitFeedback } from "../firebase";
+import { submitFeedback, auth } from "../firebase";
+import { signOut } from "firebase/auth";
 
 const ITEMS = [
   { key: "home", label: "Home", icon: Home, navigate: "home", hint: "Your road safety overview" },
@@ -46,12 +47,18 @@ export default function SideMenu({ onClose, onNavigate, language = "en", onLangu
     if (item.navigate) { onClose(); onNavigate(item.navigate); }
     else { setFeedbackState("idle"); setFeedbackError(""); setModal(item.key); }
   };
-  const handleLogout = () => {
-    localStorage.removeItem("roadsense-auth");
-    sessionStorage.removeItem("roadsense-auth");
-    setModal(null);
-    onClose();
-    window.location.reload();
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Firebase logout failed:", error);
+    } finally {
+      localStorage.removeItem("roadsense-auth");
+      sessionStorage.removeItem("roadsense-auth");
+      setModal(null);
+      onClose();
+      window.location.reload();
+    }
   };
   const handleFeedbackSubmit = async (event) => {
     event.preventDefault();
