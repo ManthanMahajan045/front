@@ -15,6 +15,8 @@ import DirectionsScreen from "./screens/DirectionsScreen";
 import AuthorityDashboard from "./screens/AuthorityDashboard";
 import SideMenu from "./components/SideMenu";
 import { translatePage } from "./i18n";
+import { auth } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 const AUTH_KEY = "roadsense-auth";
 const LANGUAGE_KEY = "roadsense-language";
@@ -38,6 +40,25 @@ export default function App() {
     const saved = localStorage.getItem("roadsense-theme");
     return saved || (window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light");
   });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser((current) => ({
+          ...(current || {}),
+          id: firebaseUser.uid,
+          firebaseUid: firebaseUser.uid,
+          name: current?.name || firebaseUser.displayName || "RoadSense user",
+          email: firebaseUser.email || current?.email || "",
+          phone: firebaseUser.phoneNumber || current?.phone || ""
+        }));
+      } else {
+        localStorage.removeItem(AUTH_KEY);
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("roadsense-theme", theme); }, [theme]);
   useEffect(() => {
