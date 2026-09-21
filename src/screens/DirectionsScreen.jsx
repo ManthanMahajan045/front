@@ -6,6 +6,7 @@ import BottomNav from "../components/BottomNav";
 import { confirmedHazards } from "../sampleData";
 import { getHazardAwareRoutes } from "../utils/routing";
 import { getCurrentLocation } from "../utils/geo";
+import { getReports } from "../firebase";
 
 const pin = L.divIcon({ className: "", html: "<div class=\"route-pin\"></div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 const livePin = L.divIcon({ className: "", html: "<div style=\"width:22px;height:22px;border-radius:50%;background:#6d28d9;border:3px solid #fff;box-shadow:0 0 0 7px rgba(109,40,217,.18),0 2px 10px rgba(0,0,0,.35);position:relative\"><span style=\"position:absolute;inset:4px;border-radius:50%;background:#fff\"></span></div>", iconSize: [28, 28], iconAnchor: [14, 14] });
@@ -15,6 +16,37 @@ const hazardIcon = (color, size = 18) => L.divIcon({
   iconSize: [size + 6, size + 6],
   iconAnchor: [(size + 6) / 2, (size + 6) / 2],
 });
+
+function distanceMeters(a, b) {
+  if (!a || !b) return Infinity;
+  const R = 6371000;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const x = Math.sin(dLat / 2) ** 2
+    + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function normalizeLiveReport(report) {
+  const coords = report?.coordinates || {};
+  const lat = Number(coords.lat ?? coords.latitude);
+  const lng = Number(coords.lng ?? coords.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const raw = String(report.hazardType || report.type || "Hazard").toLowerCase();
+  const severity = raw.includes("accident") || raw.includes("blockage") ? "red"
+    : raw.includes("water") || raw.includes("pothole") ? "orange"
+    : "yellow";
+  return {
+    id: `live-${report.id}`,
+    name: report.location || report.hazardType || "Community hazard",
+    location: report.location || "Community report",
+    coordinates: { lat, lng },
+    severity,
+    severityLabel: report.hazardType || "Community report",
+    source: "Community report",
+    status: report.status || "pending",
+  };
+}
 
 function FitRoute({ route, origin, destination, follow }) {
   const map = useMap();
@@ -37,6 +69,7 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
   const [error, setError] = useState("");
   const [isNavigating, setIsNavigating] = useState(false);
   const [gpsStatus, setGpsStatus] = useState("");
+  const [liveHazards, setLiveHazards] = useState([]);
   const latestGpsRef = useRef(null);
   const watchRef = useRef(null);
   const rerouteRef = useRef(null);
@@ -44,6 +77,14 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
   const destination = selectedLocation?.coordinates;
   const route = routes[selectedRoute] || routes[0];
   const routeLine = useMemo(() => route?.geometry?.coordinates?.map(([lng, lat]) => [lat, lng]) || [], [route]);
+  const visibleHazards = useMemo(() => {
+    const routeHazards = route?.hazards || [];
+    const routeIds = new Set(routeHazards.map((h) => h.id));
+    const merged = [...confirmedHazards, ...liveHazards];
+    const unique = merged.filter((hazard, index, all) => all.findIndex((item) => item.id === hazard.id) === index);
+    if (!origin) return routeHazards;
+    return unique.filter((hazard) => routeIds.has(hazard.id) || distanceMeters(origin, hazard.coordinates) <= (isNavigating ? 8000 : 5000));
+  }, [route, origin, liveHazards, isNavigating]);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +103,27 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
     load();
     return () => { cancelled = true; };
   }, [destination]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refreshLiveHazards = async () => {
+      try {
+        const reports = await getReports();
+        if (cancelled) return;
+        const normalized = reports.map(normalizeLiveReport).filter(Boolean);
+        setLiveHazards(normalized);
+      } catch (err) {
+        // Firestore may be unavailable/permission denied; confirmed hazards still work.
+        console.warn("Live hazard refresh skipped:", err);
+      }
+    };
+    refreshLiveHazards();
+    const timer = window.setInterval(refreshLiveHazards, 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => () => {
     if (watchRef.current !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchRef.current);
@@ -97,11 +159,11 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
   return <div className="screen directions-screen">
     <div className="route-header"><button onClick={() => { stopLiveNavigation(); onNavigate("home"); }} aria-label="Back"><ArrowLeft size={20} /></button><div><strong>{isNavigating ? "Live navigation" : "Safe route"}</strong><span>RoadSense navigation</span></div><Navigation size={20} /></div>
     <div className="route-map">
-      {origin && <MapContainer center={[origin.lat, origin.lng]} zoom={14} zoomControl={false} style={{ height: "100%", width: "100%" }}><TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitRoute route={route} origin={origin} destination={destination} follow={isNavigating} />{routeLine.length > 1 && <Polyline positions={routeLine} pathOptions={{ color: "#6d28d9", weight: 6, opacity: .9 }} />}{route?.hazards?.map((hazard) => { const color = hazard.severity === "red" ? "#dc2626" : hazard.severity === "orange" ? "#f97316" : "#eab308"; return <Marker key={hazard.id} position={[hazard.coordinates.lat, hazard.coordinates.lng]} icon={hazardIcon(color, hazard.severity === "red" ? 22 : 18)} zIndexOffset={1000} riseOnHover title={hazard.name} />; })}<Marker position={[origin.lat, origin.lng]} icon={isNavigating ? livePin : pin} /><Marker position={[destination.lat, destination.lng]} icon={pin} /></MapContainer>}
+      {origin && <MapContainer center={[origin.lat, origin.lng]} zoom={14} zoomControl={false} style={{ height: "100%", width: "100%" }}><TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitRoute route={route} origin={origin} destination={destination} follow={isNavigating} />{routeLine.length > 1 && <Polyline positions={routeLine} pathOptions={{ color: "#6d28d9", weight: 6, opacity: .9 }} />}{visibleHazards.map((hazard) => { const lat = Number(hazard.coordinates?.lat); const lng = Number(hazard.coordinates?.lng); if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null; const color = hazard.severity === "red" ? "#dc2626" : hazard.severity === "orange" ? "#f97316" : "#eab308"; const onRoute = route?.hazards?.some((hit) => hit.id === hazard.id); return <Marker key={hazard.id} position={[lat, lng]} icon={hazardIcon(color, onRoute ? 22 : 18)} zIndexOffset={onRoute ? 2000 : 1000} riseOnHover title={hazard.name} />; })}<Marker position={[origin.lat, origin.lng]} icon={isNavigating ? livePin : pin} /><Marker position={[destination.lat, destination.lng]} icon={pin} /></MapContainer>}
       {loading && <div className="route-loading">Building safest route…</div>}
       {isNavigating && gpsStatus && <div style={{ position: "absolute", zIndex: 1000, top: 12, left: 12, right: 12, padding: "9px 12px", borderRadius: 12, background: "rgba(20,20,24,.92)", color: "#fff", fontSize: 12, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 16px rgba(0,0,0,.25)" }}><LocateFixed size={15} />{gpsStatus}</div>}
     </div>
-    <div className="route-sheet"><div className="route-destination"><span>TO</span><strong>{selectedLocation.name}</strong><small>{selectedLocation.address}</small></div>{error && <div className="route-error"><ShieldAlert size={17} /> {error}</div>}{route && <><div className="route-summary"><div><Clock3 size={17} /><strong>{formatDuration(route.duration)}</strong><span>estimated</span></div><div><Navigation size={17} /><strong>{formatDistance(route.distance)}</strong><span>driving</span></div><div><ShieldAlert size={17} /><strong>{route.hazards.length ? route.hazards.length : "Clear"}</strong><span>hazards</span></div></div>{route.hazards.length > 0 && <div className="hazard-warning"><ShieldAlert size={18} /><div><strong>Hazards on this route</strong><p>{route.hazards.slice(0, 2).map((h) => h.name).join(" • ")}</p></div></div>}{!isNavigating && <div className="route-options">{routes.map((candidate, index) => <button key={`${candidate.distance}-${index}`} className={index === selectedRoute ? "route-option active" : "route-option"} onClick={() => setSelectedRoute(index)}><span>{index === 0 ? <CheckCircle2 size={15} /> : <Navigation size={15} />}{index === 0 ? "Recommended" : `Alternative ${index}`}</span><b>{formatDuration(candidate.duration)}</b><small>{candidate.hazards.length ? `${candidate.hazards.length} hazard${candidate.hazards.length > 1 ? "s" : ""}` : "No major hazards detected"}</small></button>)}</div>}<button className="btn-primary route-start" onClick={isNavigating ? stopLiveNavigation : startLiveNavigation}>{isNavigating ? <><Square size={16} /> End navigation</> : <><Navigation size={17} /> Start route</>}</button>{isNavigating && <div style={{ textAlign: "center", fontSize: 11, marginTop: 8, opacity: .7 }}>GPS location updates continuously • route refreshes every 5 seconds</div>}</>}</div>
+    <div className="route-sheet"><div className="route-destination"><span>TO</span><strong>{selectedLocation.name}</strong><small>{selectedLocation.address}</small></div>{error && <div className="route-error"><ShieldAlert size={17} /> {error}</div>}{route && <><div className="route-summary"><div><Clock3 size={17} /><strong>{formatDuration(route.duration)}</strong><span>estimated</span></div><div><Navigation size={17} /><strong>{formatDistance(route.distance)}</strong><span>driving</span></div><div><ShieldAlert size={17} /><strong>{visibleHazards.length ? visibleHazards.length : "Clear"}</strong><span>nearby hazards</span></div></div>{route.hazards.length > 0 && <div className="hazard-warning"><ShieldAlert size={18} /><div><strong>Hazards on this route</strong><p>{route.hazards.slice(0, 2).map((h) => h.name).join(" • ")}</p></div></div>}{!isNavigating && <div className="route-options">{routes.map((candidate, index) => <button key={`${candidate.distance}-${index}`} className={index === selectedRoute ? "route-option active" : "route-option"} onClick={() => setSelectedRoute(index)}><span>{index === 0 ? <CheckCircle2 size={15} /> : <Navigation size={15} />}{index === 0 ? "Recommended" : `Alternative ${index}`}</span><b>{formatDuration(candidate.duration)}</b><small>{candidate.hazards.length ? `${candidate.hazards.length} hazard${candidate.hazards.length > 1 ? "s" : ""}` : "No major hazards detected"}</small></button>)}</div>}<button className="btn-primary route-start" onClick={isNavigating ? stopLiveNavigation : startLiveNavigation}>{isNavigating ? <><Square size={16} /> End navigation</> : <><Navigation size={17} /> Start route</>}</button>{isNavigating && <div style={{ textAlign: "center", fontSize: 11, marginTop: 8, opacity: .7 }}>GPS location updates continuously • route refreshes every 5 seconds</div>}</>}</div>
     <BottomNav active="home" onNavigate={(page) => { if (isNavigating) stopLiveNavigation(); onNavigate(page); }} />
   </div>;
 }
