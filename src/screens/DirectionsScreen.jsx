@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 // Hazard markers are rendered on the directions map so route safety is visible during navigation.
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { ArrowLeft, CheckCircle2, Clock3, Navigation, ShieldAlert, LocateFixed, Square } from "lucide-react";
 import L from "leaflet";
 import BottomNav from "../components/BottomNav";
@@ -10,6 +10,12 @@ import { getCurrentLocation } from "../utils/geo";
 
 const pin = L.divIcon({ className: "", html: "<div class=\"route-pin\"></div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 const livePin = L.divIcon({ className: "", html: "<div style=\"width:22px;height:22px;border-radius:50%;background:#6d28d9;border:3px solid #fff;box-shadow:0 0 0 7px rgba(109,40,217,.18),0 2px 10px rgba(0,0,0,.35);position:relative\"><span style=\"position:absolute;inset:4px;border-radius:50%;background:#fff\"></span></div>", iconSize: [28, 28], iconAnchor: [14, 14] });
+const hazardIcon = (color, onRoute) => L.divIcon({
+  className: "roadsense-hazard-icon",
+  html: '<span style="display:block;width:' + (onRoute ? 22 : 18) + 'px;height:' + (onRoute ? 22 : 18) + 'px;border-radius:50%;background:' + color + ';border:3px solid #fff;box-shadow:0 0 0 ' + (onRoute ? 5 : 3) + 'px ' + color + '55,0 2px 9px rgba(0,0,0,.4);"></span>',
+  iconSize: [onRoute ? 28 : 24, onRoute ? 28 : 24],
+  iconAnchor: [onRoute ? 14 : 12, onRoute ? 14 : 12],
+});
 
 function FitRoute({ route, origin, destination, follow }) {
   const map = useMap();
@@ -100,13 +106,14 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
           const onRoute = route?.hazards?.some((hit) => hit.id === hazard.id);
           const color = hazard.severity === "red" ? "#dc2626" : hazard.severity === "orange" ? "#f97316" : "#eab308";
           return (
-            <CircleMarker
+            <Marker
               key={hazard.id}
-              center={[hazard.coordinates.lat, hazard.coordinates.lng]}
-              radius={onRoute ? 11 : 8}
-              pathOptions={{ color: "#fff", weight: 2, fillColor: color, fillOpacity: onRoute ? .95 : .72 }}
-            >
-            </CircleMarker>
+              position={[hazard.coordinates.lat, hazard.coordinates.lng]}
+              icon={hazardIcon(color, onRoute)}
+              zIndexOffset={onRoute ? 1000 : 0}
+              riseOnHover
+              title={hazard.severityLabel + " hazard: " + hazard.name}
+            />
           );
         })}
         <Marker position={[origin.lat, origin.lng]} icon={isNavigating ? livePin : pin} />
