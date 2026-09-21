@@ -91,7 +91,31 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
   return <div className="screen directions-screen">
     <div className="route-header"><button onClick={() => { stopLiveNavigation(); onNavigate("home"); }} aria-label="Back"><ArrowLeft size={20} /></button><div><strong>{isNavigating ? "Live navigation" : "Safe route"}</strong><span>RoadSense navigation</span></div><Navigation size={20} /></div>
     <div className="route-map">
-      {origin && <MapContainer center={[origin.lat, origin.lng]} zoom={14} zoomControl={false} style={{ height: "100%", width: "100%" }}><TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitRoute route={route} origin={origin} destination={destination} follow={isNavigating} />{routeLine.length > 1 && <Polyline positions={routeLine} pathOptions={{ color: "#6d28d9", weight: 6, opacity: .9 }} />}<Marker position={[origin.lat, origin.lng]} icon={isNavigating ? livePin : pin} /><Marker position={[destination.lat, destination.lng]} icon={pin} /></MapContainer>}
+      {origin && <MapContainer center={[origin.lat, origin.lng]} zoom={14} zoomControl={false} preferCanvas style={{ height: "100%", width: "100%" }}>
+        <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <FitRoute route={route} origin={origin} destination={destination} follow={isNavigating} />
+        {routeLine.length > 1 && <Polyline positions={routeLine} pathOptions={{ color: "#6d28d9", weight: 6, opacity: .9 }} />}
+        {confirmedHazards.map((hazard) => {
+          const onRoute = route?.hazards?.some((hit) => hit.id === hazard.id);
+          const color = hazard.severity === "red" ? "#dc2626" : hazard.severity === "orange" ? "#f97316" : "#eab308";
+          return (
+            <CircleMarker
+              key={hazard.id}
+              center={[hazard.coordinates.lat, hazard.coordinates.lng]}
+              radius={onRoute ? 11 : 8}
+              pathOptions={{ color: "#fff", weight: 2, fillColor: color, fillOpacity: onRoute ? .95 : .72 }}
+            >
+              <Popup>
+                <strong>{hazard.name}</strong><br />
+                {hazard.severityLabel} · {hazard.type}
+                {onRoute ? <><br /><b>Hazard on selected route</b></> : null}
+              </Popup>
+            </CircleMarker>
+          );
+        })}
+        <Marker position={[origin.lat, origin.lng]} icon={isNavigating ? livePin : pin} />
+        <Marker position={[destination.lat, destination.lng]} icon={pin} />
+      </MapContainer>
       {loading && <div className="route-loading">Building safest route…</div>}
       {isNavigating && gpsStatus && <div style={{ position: "absolute", zIndex: 1000, top: 12, left: 12, right: 12, padding: "9px 12px", borderRadius: 12, background: "rgba(20,20,24,.92)", color: "#fff", fontSize: 12, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 16px rgba(0,0,0,.25)" }}><LocateFixed size={15} />{gpsStatus}</div>}
     </div>
