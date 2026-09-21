@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 // Hazard markers are rendered on the directions map so route safety is visible during navigation.
-import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { ArrowLeft, CheckCircle2, Clock3, Navigation, ShieldAlert, LocateFixed, Square } from "lucide-react";
 import L from "leaflet";
 import BottomNav from "../components/BottomNav";
@@ -106,11 +106,6 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
               radius={onRoute ? 11 : 8}
               pathOptions={{ color: "#fff", weight: 2, fillColor: color, fillOpacity: onRoute ? .95 : .72 }}
             >
-              <Popup>
-                <strong>{hazard.name}</strong><br />
-                {hazard.severityLabel} · {hazard.type}
-                {onRoute ? <><br /><b>Hazard on selected route</b></> : null}
-              </Popup>
             </CircleMarker>
           );
         })}
