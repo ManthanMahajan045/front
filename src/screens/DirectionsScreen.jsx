@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 // Hazard markers are rendered on the directions map so route safety is visible during navigation.
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import { ArrowLeft, CheckCircle2, Clock3, Navigation, ShieldAlert, LocateFixed, Square } from "lucide-react";
 import L from "leaflet";
 import BottomNav from "../components/BottomNav";
