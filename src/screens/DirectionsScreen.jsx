@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { ArrowLeft, CheckCircle2, Clock3, Navigation, ShieldAlert, LocateFixed, Square } from "lucide-react";
 import L from "leaflet";
 import BottomNav from "../components/BottomNav";
