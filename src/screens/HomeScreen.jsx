@@ -133,7 +133,7 @@ export default function HomeScreen({ onNavigate, selectedLocation, theme, onTogg
       <div className="map-wrapper">
         <MapContainer center={[mapCenter.lat, mapCenter.lng]} zoom={14} zoomControl preferCanvas style={{ height: "100%", width: "100%" }}>
           <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <RecenterMap center={mapCenter} zoom={selectedLocation ? 16 : 14} />
+          <RecenterMap center={mapCenter} zoom={selectedLocation ? 12 : 14} />
           {userLocation && !selectedLocation && <><Circle center={[userLocation.lat, userLocation.lng]} radius={Math.max(userLocation.accuracy || 10, 5)} pathOptions={{ color: "#2563eb", fillColor: "#3b82f6", fillOpacity: .1, weight: 1 }} /><CircleMarker center={[userLocation.lat, userLocation.lng]} radius={7} pathOptions={{ color: "#fff", fillColor: "#2563eb", fillOpacity: 1, weight: 3 }}><Popup>You are here · accuracy ±{Math.round(userLocation.accuracy)}m</Popup></CircleMarker></>}
           {selectedLocation && <Marker position={[selectedLocation.coordinates.lat, selectedLocation.coordinates.lng]} icon={selectedPinIcon}><Popup>{selectedLocation.name}</Popup></Marker>}
           {confirmedHazards.map((hazard) => <CircleMarker key={hazard.id} center={[hazard.coordinates.lat, hazard.coordinates.lng]} radius={8} pathOptions={{ color: severityColors[hazard.severity], fillColor: severityColors[hazard.severity], fillOpacity: .6 }}><Popup>{hazard.name} — {hazard.severityLabel} ({hazard.type})</Popup></CircleMarker>)}
