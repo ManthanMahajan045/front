@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-// Hazard markers are rendered on the directions map so route safety is visible during navigation.
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { ArrowLeft, CheckCircle2, Clock3, Navigation, ShieldAlert, LocateFixed, Square } from "lucide-react";
 import L from "leaflet";
@@ -10,11 +9,11 @@ import { getCurrentLocation } from "../utils/geo";
 
 const pin = L.divIcon({ className: "", html: "<div class=\"route-pin\"></div>", iconSize: [22, 22], iconAnchor: [11, 11] });
 const livePin = L.divIcon({ className: "", html: "<div style=\"width:22px;height:22px;border-radius:50%;background:#6d28d9;border:3px solid #fff;box-shadow:0 0 0 7px rgba(109,40,217,.18),0 2px 10px rgba(0,0,0,.35);position:relative\"><span style=\"position:absolute;inset:4px;border-radius:50%;background:#fff\"></span></div>", iconSize: [28, 28], iconAnchor: [14, 14] });
-const hazardIcon = (color, onRoute) => L.divIcon({
-  className: "roadsense-hazard-icon",
-  html: '<span style="display:block;width:' + (onRoute ? 22 : 18) + 'px;height:' + (onRoute ? 22 : 18) + 'px;border-radius:50%;background:' + color + ';border:3px solid #fff;box-shadow:0 0 0 ' + (onRoute ? 5 : 3) + 'px ' + color + '55,0 2px 9px rgba(0,0,0,.4);"></span>',
-  iconSize: [onRoute ? 28 : 24, onRoute ? 28 : 24],
-  iconAnchor: [onRoute ? 14 : 12, onRoute ? 14 : 12],
+const hazardIcon = (color, size = 18) => L.divIcon({
+  className: "",
+  html: '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + color + ';border:3px solid #fff;box-shadow:0 2px 9px rgba(0,0,0,.4);"></div>',
+  iconSize: [size + 6, size + 6],
+  iconAnchor: [(size + 6) / 2, (size + 6) / 2],
 });
 
 function FitRoute({ route, origin, destination, follow }) {
@@ -98,27 +97,7 @@ export default function DirectionsScreen({ onNavigate, selectedLocation, userLoc
   return <div className="screen directions-screen">
     <div className="route-header"><button onClick={() => { stopLiveNavigation(); onNavigate("home"); }} aria-label="Back"><ArrowLeft size={20} /></button><div><strong>{isNavigating ? "Live navigation" : "Safe route"}</strong><span>RoadSense navigation</span></div><Navigation size={20} /></div>
     <div className="route-map">
-      {origin && <MapContainer center={[origin.lat, origin.lng]} zoom={14} zoomControl={false} preferCanvas style={{ height: "100%", width: "100%" }}>
-        <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <FitRoute route={route} origin={origin} destination={destination} follow={isNavigating} />
-        {routeLine.length > 1 && <Polyline positions={routeLine} pathOptions={{ color: "#6d28d9", weight: 6, opacity: .9 }} />}
-        {confirmedHazards.map((hazard) => {
-          const onRoute = route?.hazards?.some((hit) => hit.id === hazard.id);
-          const color = hazard.severity === "red" ? "#dc2626" : hazard.severity === "orange" ? "#f97316" : "#eab308";
-          return (
-            <Marker
-              key={hazard.id}
-              position={[hazard.coordinates.lat, hazard.coordinates.lng]}
-              icon={hazardIcon(color, onRoute)}
-              zIndexOffset={onRoute ? 1000 : 0}
-              riseOnHover
-              title={hazard.severityLabel + " hazard: " + hazard.name}
-            />
-          );
-        })}
-        <Marker position={[origin.lat, origin.lng]} icon={isNavigating ? livePin : pin} />
-        <Marker position={[destination.lat, destination.lng]} icon={pin} />
-      </MapContainer>
+      {origin && <MapContainer center={[origin.lat, origin.lng]} zoom={14} zoomControl={false} style={{ height: "100%", width: "100%" }}><TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitRoute route={route} origin={origin} destination={destination} follow={isNavigating} />{routeLine.length > 1 && <Polyline positions={routeLine} pathOptions={{ color: "#6d28d9", weight: 6, opacity: .9 }} />}{route?.hazards?.map((hazard) => { const color = hazard.severity === "red" ? "#dc2626" : hazard.severity === "orange" ? "#f97316" : "#eab308"; return <Marker key={hazard.id} position={[hazard.coordinates.lat, hazard.coordinates.lng]} icon={hazardIcon(color, hazard.severity === "red" ? 22 : 18)} zIndexOffset={1000} riseOnHover title={hazard.name} />; })}<Marker position={[origin.lat, origin.lng]} icon={isNavigating ? livePin : pin} /><Marker position={[destination.lat, destination.lng]} icon={pin} /></MapContainer>}
       {loading && <div className="route-loading">Building safest route…</div>}
       {isNavigating && gpsStatus && <div style={{ position: "absolute", zIndex: 1000, top: 12, left: 12, right: 12, padding: "9px 12px", borderRadius: 12, background: "rgba(20,20,24,.92)", color: "#fff", fontSize: 12, display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 16px rgba(0,0,0,.25)" }}><LocateFixed size={15} />{gpsStatus}</div>}
     </div>
