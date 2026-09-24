@@ -11,6 +11,7 @@ import ReportHazardScreen from "./screens/ReportHazardScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import AlertsScreen from "./screens/AlertsScreen";
 import ReportsScreen from "./screens/ReportsScreen";
+import EmergencyScreen from "./screens/EmergencyScreen";
 import DirectionsScreen from "./screens/DirectionsScreen";
 import AuthorityDashboard from "./screens/AuthorityDashboard";
 import SideMenu from "./components/SideMenu";
@@ -79,5 +80,5 @@ export default function App() {
   if (screen === "authority" && !authorityUser) {
     return <div className="app-shell auth-app-shell"><AuthorityLoginScreen onBack={() => navigate("home")} onAuthenticated={(nextUser) => { setAuthorityUser(nextUser); setScreen("authority"); }} /></div>;
   }
-  return <div className="app-shell">{screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} onNotifications={() => navigate("alerts")} />}{screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "saved" && <SavedPlacesScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}{screen === "report" && <ReportHazardScreen {...screenProps} />}{screen === "profile" && <ProfileScreen {...screenProps} />}{screen === "alerts" && <AlertsScreen {...screenProps} />}{screen === "reports" && <ReportsScreen {...screenProps} />}{screen === "authority" && <AuthorityDashboard {...screenProps} authorityUser={authorityUser} onBack={() => { setAuthorityUser(null); navigate("home"); }} />}{menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={changeLanguage} />}</div>;
+  return <div className="app-shell">{screen === "home" && <HomeScreen {...screenProps} selectedLocation={selectedLocation} onNotifications={() => navigate("alerts")} />}{screen === "search" && <SearchScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "saved" && <SavedPlacesScreen {...screenProps} onSelectLocation={setSelectedLocation} />}{screen === "directions" && <DirectionsScreen {...screenProps} selectedLocation={selectedLocation} />}{screen === "report" && <ReportHazardScreen {...screenProps} />}{screen === "profile" && <ProfileScreen {...screenProps} />}{screen === "alerts" && <AlertsScreen {...screenProps} />}{screen === "emergency" && <EmergencyScreen {...screenProps} />}{screen === "reports" && <ReportsScreen {...screenProps} />}{screen === "authority" && <AuthorityDashboard {...screenProps} authorityUser={authorityUser} onBack={() => { setAuthorityUser(null); navigate("home"); }} />}{menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={navigate} language={language} onLanguageChange={changeLanguage} />}</div>;
 }
