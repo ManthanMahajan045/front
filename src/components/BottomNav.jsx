@@ -1,9 +1,10 @@
-import { Home, FileText, Bell, User } from "lucide-react";
+import { Home, Navigation, Bell, MapPin, User } from "lucide-react";
 
 const TABS = [
   { key: "home", label: "Home", icon: Home },
-  { key: "reports", label: "Reports", icon: FileText },
+  { key: "directions", label: "Navigate", icon: Navigation },
   { key: "alerts", label: "Alerts", icon: Bell },
+  { key: "report", label: "Report", icon: MapPin },
   { key: "profile", label: "Profile", icon: User },
 ];
 
