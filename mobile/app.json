@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "RoadSense",
+    "slug": "roadsense",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "roadsense",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "RoadSense uses your photos when you attach evidence to a road-hazard report.",
+          "cameraPermission": "RoadSense uses your camera when you capture evidence for a road-hazard report."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "RoadSense uses your location to show nearby hazards and build safer routes."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.roadsense.app",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
