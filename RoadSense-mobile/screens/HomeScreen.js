@@ -1,5 +1,7 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 import LocationStatus from "../components/LocationStatus";
+import StylingDemo from "../components/StylingDemo";
+import HazardReportForm from "../components/HazardReportForm";
 import AlertFeatureDemo from "../components/AlertFeatureDemo";
 
 export default function HomeScreen() {
@@ -7,7 +9,9 @@ export default function HomeScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>RoadSense</Text>
       <Text style={styles.subtitle}>Road safety information from your phone.</Text>
+      <StylingDemo />
       <LocationStatus />
+      <HazardReportForm />
       <AlertFeatureDemo />
     </ScrollView>
   );
