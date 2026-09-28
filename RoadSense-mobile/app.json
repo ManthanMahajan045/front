@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "RoadSense",
+    "slug": "roadsense-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "plugins": [
+      ["expo-location", {
+        "locationAlwaysAndWhenInUsePermission": "Show nearby hazards on the map."
+      }],
+      ["expo-image-picker", {
+        "photosPermission": "Attach a photo to your hazard report."
+      }]
+    ],
+    "android": {
+      "package": "com.roadsense.mobile"
+    }
+  }
+}
